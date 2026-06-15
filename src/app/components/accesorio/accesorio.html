@@ -1,0 +1,150 @@
+<app-header></app-header>
+
+<div class="solicitud-layout">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="title-page mb-0">Gestión de Accesorios</h1>
+    <button type="button" class="btn btn-danger" (click)="abrirModalCrear()">
+      <span class="add-icon">+</span> Nuevo Accesorio
+    </button>
+  </div>
+
+  <section class="card-section">
+    <h5 class="section-title">Inventario de Accesorios</h5>
+    
+    <div class="table-responsive mt-3">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th>Marca</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Estado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of accesorios">
+            <td >{{ a.categoria }}</td>
+            <td >{{ a.marca }}</td>
+            <td >{{ a.nombre }}</td>
+            <td>{{ a.descripcion }}</td>
+            <td>S/. {{ a.precio | number:'1.2-2' }}</td>
+            <td>
+              <span class="badge" [ngClass]="(a.stock ?? 0) > 5 ? 'bg-success' : 'bg-warning text-dark'">
+                {{ a.stock }} und
+              </span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="a.estado === 'Disponible' ? 'bg-info text-dark' : 'bg-danger'">
+                {{ a.estado }}
+              </span>
+            </td>
+            <td class="text-center">
+              <button class="btn btn-outline-primary btn-sm me-2" (click)="abrirModalEditar(a)">
+                Editar
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="eliminar(a.id)">
+                Eliminar
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="buscando">
+            <td colspan="8" class="text-center text-muted py-4">
+              <div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
+              Buscando accesorios en la base de datos...
+            </td>
+          </tr>
+
+          <tr *ngIf="accesorios.length === 0 && !buscando">
+            <td colspan="8" class="text-center text-muted py-4">
+              No hay accesorios registrados en el almacén.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="actions-row mt-4">
+    <button type="button" class="btn btn-outline-danger" (click)="onAtras()">⟵ Menú Principal</button>
+  </div>
+</div>
+
+<div class="modal-backdrop-gesflex" *ngIf="showModal">
+  <div class="modal-gesflex carga-modal">
+    <h3 class="modal-title-gesflex mb-3">
+      {{ isEditMode ? 'Modificar Accesorio' : 'Registrar Nuevo Accesorio' }}
+    </h3>
+
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="row">
+        
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Nombre del Accesorio</label>
+          <input type="text" class="form-control" formControlName="nombre" placeholder="Ej. Disco Diamantado" />
+          <div class="form-text text-danger" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.errors">
+            El nombre es obligatorio.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Marca</label>
+          <input type="text" class="form-control" formControlName="marca" placeholder="Ej. Bosch, Stanley..." />
+          <div class="form-text text-danger" *ngIf="form.get('marca')?.touched && form.get('marca')?.errors">
+            La marca es obligatoria.
+          </div>
+        </div>
+
+        <div class="col-md-8 mb-3">
+          <label class="form-label fw-semibold">Descripción Detallada</label>
+          <input type="text" class="form-control" formControlName="descripcion" placeholder="Ej. Corte segmentado de 4 1/2 pulgadas para concreto..." />
+          <div class="form-text text-danger" *ngIf="form.get('descripcion')?.touched && form.get('descripcion')?.errors">
+            La descripción es obligatoria.
+          </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label fw-semibold">Categoría</label>
+          <select class="form-select" formControlName="categoria">
+            <option value="" disabled>Seleccione categoría...</option>
+            <option value="Seguridad">Seguridad (Cascos, Guantes)</option>
+            <option value="Consumibles">Consumibles (Discos, Brocas)</option>
+            <option value="Repuestos">Repuestos</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label fw-semibold">Precio Unitario (S/.)</label>
+          <input type="number" step="0.01" class="form-control" formControlName="precio" placeholder="0.00" />
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label fw-semibold">Stock</label>
+          <input type="number" class="form-control" formControlName="stock" placeholder="0" />
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label fw-semibold">Estado</label>
+          <select class="form-select" formControlName="estado">
+            <option value="Disponible">Disponible</option>
+            <option value="Mantenimiento">Mantenimiento</option>
+            <option value="Agotado">Agotado</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="actions-row mt-3">
+        <button type="button" class="btn btn-outline-danger" (click)="cerrarModal()">⟵ Cancelar</button>
+        <button type="submit" class="btn btn-danger" [disabled]="form.invalid">
+          {{ isEditMode ? 'Actualizar Cambios' : 'Guardar en Inventario' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

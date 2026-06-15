@@ -1,0 +1,144 @@
+<app-header></app-header>
+
+<div class="solicitud-layout">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="title-page mb-0">Gestión de Herramientas</h1>
+    <button type="button" class="btn btn-danger" (click)="abrirModalCrear()">
+      <span class="add-icon">+</span> Nueva Herramienta
+    </button>
+  </div>
+
+  <section class="card-section">
+    <h5 class="section-title">Inventario Maestro de Herramientas</h5>
+    
+    <div class="table-responsive mt-3">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Marca</th>
+            <th>Fecha Compra</th>
+            <th>Vida Útil</th>
+            <th>Estado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let h of herramientas">
+            <td>{{ h.nombre }}</td>
+            <td>{{ h.tipo }}</td>
+            <td>{{ h.marca }}</td>
+            <td>{{ h.compra | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ h.vidaUtil }}</td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'bg-info text-dark': h.estado === 'Disponible',
+                'bg-warning text-dark': h.estado === 'En Uso',
+                'bg-danger': h.estado === 'Mantenimiento'
+              }">
+                {{ h.estado }}
+              </span>
+            </td>
+            <td class="text-center">
+              <button class="btn btn-outline-primary btn-sm me-2" (click)="abrirModalEditar(h)">
+                Editar
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="eliminar(h.id)">
+                Eliminar
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="buscando">
+            <td colspan="7" class="text-center text-muted py-4">
+              <div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
+              Buscando herramientas en el almacén...
+            </td>
+          </tr>
+
+          <tr *ngIf="herramientas.length === 0 && !buscando">
+            <td colspan="7" class="text-center text-muted py-4">
+              No hay herramientas registradas en el sistema.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="actions-row mt-4">
+    <button type="button" class="btn btn-outline-danger" (click)="onAtras()">⟵ Menú Principal</button>
+  </div>
+</div>
+
+<div class="modal-backdrop-gesflex" *ngIf="showModal">
+  <div class="modal-gesflex carga-modal">
+    <h3 class="modal-title-gesflex mb-3">
+      {{ isEditMode ? 'Modificar Herramienta' : 'Registrar Nueva Herramienta' }}
+    </h3>
+
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="row">
+        
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Nombre de la Herramienta</label>
+          <input type="text" class="form-control" formControlName="nombre" placeholder="Ej. Amoladora Angular, Rotomartillo" />
+          <div class="form-text text-danger" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.errors">
+            El nombre es obligatorio.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Marca</label>
+          <input type="text" class="form-control" formControlName="marca" placeholder="Ej. Makita, DeWalt, Bosch" />
+          <div class="form-text text-danger" *ngIf="form.get('marca')?.touched && form.get('marca')?.errors">
+            La marca es obligatoria.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Tipo de Herramienta</label>
+          <input type="text" class="form-control" formControlName="tipo" placeholder="Ej. Eléctrica, Neumática, Manual" />
+          <div class="form-text text-danger" *ngIf="form.get('tipo')?.touched && form.get('tipo')?.errors">
+            El tipo de herramienta es requerido.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Vida Útil Estimada</label>
+          <input type="text" class="form-control" formControlName="vidaUtil" placeholder="Ej. 5 años, 10,000 horas" />
+          <div class="form-text text-danger" *ngIf="form.get('vidaUtil')?.touched && form.get('vidaUtil')?.errors">
+            La vida útil estimación es requerida.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Fecha de Compra</label>
+          <input type="date" class="form-control" formControlName="compra" />
+          <div class="form-text text-danger" *ngIf="form.get('compra')?.touched && form.get('compra')?.errors">
+            La fecha de adquisición es obligatoria.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Estado Operativo</label>
+          <select class="form-select" formControlName="estado">
+            <option value="Disponible">Disponible</option>
+            <option value="En Uso">En Uso</option>
+            <option value="Mantenimiento">Mantenimiento</option>
+            <option value="Baja">Dada de Baja</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="actions-row mt-3">
+        <button type="button" class="btn btn-outline-danger" (click)="cerrarModal()">⟵ Cancelar</button>
+        <button type="submit" class="btn btn-danger" [disabled]="form.invalid">
+          {{ isEditMode ? 'Actualizar Cambios' : 'Guardar en Sistema' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

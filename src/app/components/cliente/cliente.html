@@ -1,0 +1,139 @@
+<app-header></app-header>
+
+<div class="solicitud-layout">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="title-page mb-0">Gestión de Clientes</h1>
+    <button type="button" class="btn btn-danger" (click)="abrirModalCrear()">
+      <span class="add-icon">+</span> Nuevo Cliente
+    </button>
+  </div>
+
+  <section class="card-section">
+    <h5 class="section-title">Listado de Clientes Registrados</h5>
+    
+    <div class="table-responsive mt-3">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>DNI</th>
+            <th>Nombre Completo</th>
+            <th>Correo Electrónico</th>
+            <th>Teléfono</th>
+            <th>Dirección</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of clientes">
+            <td>{{ c.dni }}</td>
+            <td class="fw-semibold">{{ c.nombre }} {{ c.apellido }}</td>
+            <td>{{ c.correo }}</td>
+            <td>{{ c.telefono || '---' }}</td>
+            <td>{{ c.direccion || '---' }}</td>
+            <td class="text-center">
+              <button class="btn btn-outline-primary btn-sm me-2" (click)="abrirModalEditar(c)">
+                Editar
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="eliminar(c.id)">
+                Eliminar
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="buscando">
+            <td colspan="6" class="text-center text-muted py-4">
+              <div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
+              Conectando con el microservicio de clientes...
+            </td>
+          </tr>
+
+          <tr *ngIf="clientes.length === 0 && !buscando">
+            <td colspan="6" class="text-center text-muted py-4">
+              No se encontraron clientes registrados en el sistema.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="actions-row mt-4">
+    <button type="button" class="btn btn-outline-danger" (click)="onAtras()">⟵ Menú Principal</button>
+  </div>
+</div>
+
+<div class="modal-backdrop-gesflex" *ngIf="showModal">
+  <div class="modal-gesflex carga-modal">
+    <h3 class="modal-title-gesflex mb-3">
+      {{ isEditMode ? 'Modificar Datos de Cliente' : 'Registrar Nuevo Cliente' }}
+    </h3>
+
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="row">
+        
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">DNI (8 dígitos)</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            formControlName="dni" 
+            maxlength="8"
+            (input)="buscarPorDni($event)"
+            placeholder="Ingrese DNI..." 
+          />
+          <div class="form-text text-danger" *ngIf="form.get('dni')?.touched && form.get('dni')?.errors?.['required']">
+            El número de DNI es obligatorio.
+          </div>
+          <div class="form-text text-danger" *ngIf="form.get('dni')?.errors?.['pattern']">
+            El DNI debe contener exactamente 8 números.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Correo Electrónico</label>
+          <input type="email" class="form-control" formControlName="correo" placeholder="ejemplo@correo.com" />
+          <div class="form-text text-danger" *ngIf="form.get('correo')?.touched && form.get('correo')?.errors">
+            Ingrese un correo electrónico válido.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Nombres</label>
+          <input type="text" class="form-control" formControlName="nombre" placeholder="Nombres del cliente..." />
+          <div class="form-text text-danger" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.errors">
+            El nombre es requerido (mínimo 2 letras).
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Apellidos</label>
+          <input type="text" class="form-control" formControlName="apellido" placeholder="Apellidos del cliente..." />
+          <div class="form-text text-danger" *ngIf="form.get('apellido')?.touched && form.get('apellido')?.errors">
+            El apellido es requerido (mínimo 2 letras).
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Teléfono / Celular</label>
+          <input type="text" class="form-control" formControlName="telefono" maxlength="9" placeholder="9xxxxxxxx" />
+          <div class="form-text text-danger" *ngIf="form.get('telefono')?.errors?.['pattern']">
+            El celular debe iniciar con 9 y tener 9 dígitos.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-semibold">Dirección Residencial</label>
+          <input type="text" class="form-control" formControlName="direccion" placeholder="Av. Las Flores 123..." />
+        </div>
+
+      </div>
+
+      <div class="actions-row mt-3">
+        <button type="button" class="btn btn-outline-danger" (click)="cerrarModal()">⟵ Cancelar</button>
+        <button type="submit" class="btn btn-danger" [disabled]="form.invalid">
+          {{ isEditMode ? 'Actualizar' : 'Guardar Cliente' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

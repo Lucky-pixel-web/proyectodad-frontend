@@ -1,0 +1,10 @@
+export class Accesorio {
+    id?: number;
+    nombre?: string;
+    descripcion?: string;
+    precio?: number;
+    stock?: number;
+    categoria?: string;
+    marca?: string;
+    estado?: string;
+}
