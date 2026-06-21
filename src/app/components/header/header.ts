@@ -1,12 +1,30 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router'; // 👈 CRUCIAL
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../services/auth-service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule], // 👈 DEBE ESTAR AQUÍ
+  imports: [CommonModule, RouterModule],
   templateUrl: './header.html',
-  styleUrls: ['./header.css'],
 })
-export class Header {}
+export class Header {
+  private auth = inject(AuthService);
+  private router = inject(Router);
+
+  username = localStorage.getItem('username_display') || localStorage.getItem('username') || 'Usuario';
+  rol = this.formatRol(this.auth.getRol());
+  isAdmin = this.auth.getRol() === 'ADMIN';
+
+  formatRol(rol: string | null): string {
+    if (rol === 'ADMIN') return 'Administrador';
+    if (rol === 'USER') return 'Almacenero';
+    return rol || '';
+  }
+
+  logout(): void {
+    this.auth.logout();
+    this.router.navigate(['/login']);
+  }
+}
