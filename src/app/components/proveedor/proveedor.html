@@ -1,0 +1,106 @@
+<app-header></app-header>
+<div class="page-shell">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Proveedores</h1>
+      <p class="page-subtitle">Administre el directorio de proveedores</p>
+    </div>
+    <button class="btn-primary-dark" (click)="abrirModalCrear()">+ Agregar Proveedor</button>
+  </div>
+
+  <div class="toolbar-row">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Buscar por nombre o descripción..." [value]="busqueda" (input)="busqueda = $any($event.target).value" (keyup.enter)="filtrar()" />
+    </div>
+    <button type="button" class="btn-search" (click)="filtrar()">Buscar</button>
+    <div class="filter-pills">
+      <button class="filter-pill" [class.active]="filtroCat === 'Todos'" (click)="setFiltro('Todos')">Todos</button>
+      <button class="filter-pill" [class.active]="filtroCat === 'Herramienta'" (click)="setFiltro('Herramienta')">Herramientas</button>
+      <button class="filter-pill" [class.active]="filtroCat === 'Melamine'" (click)="setFiltro('Melamine')">Melamine</button>
+      <button class="filter-pill" [class.active]="filtroCat === 'Accesorio'" (click)="setFiltro('Accesorio')">Accesorios</button>
+    </div>
+  </div>
+
+  <div class="cards-grid" *ngIf="!buscando && filtrados.length">
+    <div class="item-card" *ngFor="let p of filtrados; let i = index" [style.animation-delay.ms]="i * 60">
+      <div class="item-card-header">
+        <h3 class="item-card-title mb-0">{{ getNombreCompleto(p) }}</h3>
+        <span class="badge-status" [ngClass]="getCatClass(p.categoriaNombre)">{{ p.categoriaNombre }}</span>
+      </div>
+      <div class="item-card-body">
+        <div class="card-image-hero" *ngIf="p.foto"><img [src]="p.foto" alt="" /></div>
+        <div class="item-card-meta">
+          <span>📞 +51 {{ p.telefono }}</span>
+          <span>📍 {{ p.direccion }}</span>
+          <span>{{ p.descripcion }}</span>
+        </div>
+        <app-maps-planet [query]="p.ubicacion || p.direccion || ''" label="Ver ubicación en tiempo real" />
+      </div>
+      <div class="item-card-footer">
+        <button class="btn-outline btn-icon" (click)="abrirModalEditar(p)">✏️ Editar</button>
+        <button class="btn-danger-soft btn-icon" (click)="eliminar(p.id)">🗑️ Eliminar</button>
+      </div>
+    </div>
+  </div>
+  <div class="empty-search animate-in" *ngIf="!buscando && sinResultadosBusqueda">
+    <div class="empty-search-icon">🔍</div>
+    <h3>No se encontraron resultados</h3>
+    <p>No hay proveedores que coincidan con «{{ busqueda }}»</p>
+  </div>
+  <div class="empty-search animate-in" *ngIf="!buscando && !filtrados.length && !busquedaActiva">
+    <div class="empty-search-icon">🏢</div>
+    <h3>No hay proveedores registrados</h3>
+    <p>Use «+ Agregar Proveedor» para crear el primero.</p>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ isEditMode ? 'Editar Proveedor' : 'Agregar Nuevo Proveedor' }}</h3>
+      <button type="button" class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="modal-body">
+        <p class="modal-intro">Complete los datos del proveedor</p>
+        <div class="alert-error" *ngIf="formError">{{ formError }}</div>
+        <div class="modal-form-section">
+        <div class="form-grid">
+          <div class="form-group"><label>Nombres <span class="req">*</span></label><input class="form-control-custom" formControlName="nombres" /></div>
+          <div class="form-group"><label>Apellidos <span class="req">*</span></label><input class="form-control-custom" formControlName="apellidos" /></div>
+          <div class="form-group"><label>Teléfono <span class="req">*</span></label><input type="number" class="form-control-custom" formControlName="telefono" /></div>
+          <div class="form-group"><label>Categoría que Vende <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="categoriaId" *ngIf="categorias.length">
+              <option *ngFor="let c of categorias" [ngValue]="c.id">{{ c.nombre }}</option>
+            </select>
+            <p class="form-hint warn" *ngIf="!categorias.length">No se cargaron categorías. Verifique ms-categorias (8082) y recargue.</p>
+          </div>
+          <div class="form-group full"><label>Dirección <span class="req">*</span></label><input class="form-control-custom" formControlName="direccion" placeholder="Ej: Av. Industrial 123, Lima" /></div>
+          <div class="form-group full">
+            <label>Ubicación / Referencia <span class="req">*</span></label>
+            <input class="form-control-custom" formControlName="ubicacion" placeholder="Escriba la dirección para buscar..." />
+            <app-maps-planet [query]="mapsQuery" label="Ver ubicación en tiempo real" />
+          </div>
+          <div class="form-group full">
+            <label>Imagen <span class="req">*</span></label>
+            <div class="file-upload-row">
+              <label class="btn-file">📁 Subir archivo<input type="file" accept="image/*" hidden (change)="onFotoSelected($event)" /></label>
+              <span class="file-name" *ngIf="fotoNombre">{{ fotoNombre }}</span>
+            </div>
+            <div class="image-preview-panel">
+              <img *ngIf="fotoPreview" [src]="fotoPreview" alt="Vista previa" />
+              <span *ngIf="!fotoPreview" class="text-muted">La imagen aparecerá aquí</span>
+            </div>
+          </div>
+          <div class="form-group full"><label>Descripción <span class="req">*</span></label><textarea class="form-control-custom" rows="3" formControlName="descripcion"></textarea></div>
+        </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-primary-dark">{{ isEditMode ? 'Guardar Cambios' : 'Agregar' }}</button>
+      </div>
+    </form>
+  </div>
+</div>

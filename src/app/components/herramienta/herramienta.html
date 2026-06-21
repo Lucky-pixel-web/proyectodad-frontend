@@ -1,143 +1,105 @@
 <app-header></app-header>
-
-<div class="solicitud-layout">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="title-page mb-0">Gestión de Herramientas</h1>
-    <button type="button" class="btn btn-danger" (click)="abrirModalCrear()">
-      <span class="add-icon">+</span> Nueva Herramienta
-    </button>
-  </div>
-
-  <section class="card-section">
-    <h5 class="section-title">Inventario Maestro de Herramientas</h5>
-    
-    <div class="table-responsive mt-3">
-      <table class="table table-hover align-middle">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Tipo</th>
-            <th>Marca</th>
-            <th>Fecha Compra</th>
-            <th>Vida Útil</th>
-            <th>Estado</th>
-            <th class="text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let h of herramientas">
-            <td>{{ h.nombre }}</td>
-            <td>{{ h.tipo }}</td>
-            <td>{{ h.marca }}</td>
-            <td>{{ h.compra | date: 'dd/MM/yyyy' }}</td>
-            <td>{{ h.vidaUtil }}</td>
-            <td>
-              <span class="badge" [ngClass]="{
-                'bg-info text-dark': h.estado === 'Disponible',
-                'bg-warning text-dark': h.estado === 'En Uso',
-                'bg-danger': h.estado === 'Mantenimiento'
-              }">
-                {{ h.estado }}
-              </span>
-            </td>
-            <td class="text-center">
-              <button class="btn btn-outline-primary btn-sm me-2" (click)="abrirModalEditar(h)">
-                Editar
-              </button>
-              <button class="btn btn-danger btn-sm" (click)="eliminar(h.id)">
-                Eliminar
-              </button>
-            </td>
-          </tr>
-
-          <tr *ngIf="buscando">
-            <td colspan="7" class="text-center text-muted py-4">
-              <div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
-              Buscando herramientas en el almacén...
-            </td>
-          </tr>
-
-          <tr *ngIf="herramientas.length === 0 && !buscando">
-            <td colspan="7" class="text-center text-muted py-4">
-              No hay herramientas registradas en el sistema.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+<div class="page-shell">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Herramientas</h1>
+      <p class="page-subtitle">Administre el inventario de herramientas</p>
     </div>
-  </section>
-
-  <div class="actions-row mt-4">
-    <button type="button" class="btn btn-outline-danger" (click)="onAtras()">⟵ Menú Principal</button>
+    <button class="btn-primary-dark" (click)="abrirModalCrear()">+ Agregar Herramienta</button>
   </div>
+
+  <div class="toolbar-row">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Buscar por nombre o marca..." [value]="busqueda" (input)="busqueda = $any($event.target).value" (keyup.enter)="filtrar()" />
+    </div>
+    <button type="button" class="btn-search" (click)="filtrar()">Buscar</button>
+  </div>
+
+  <div *ngIf="buscando" class="text-center py-4"><div class="spinner"></div></div>
+
+  <div class="cards-grid" *ngIf="!buscando && filtradas.length">
+    <div class="item-card" *ngFor="let h of filtradas; let i = index" [style.animation-delay.ms]="i * 60">
+      <div class="item-card-header">
+        <h3 class="item-card-title mb-0">{{ h.nombre }}</h3>
+        <span class="badge-status" [ngClass]="getEstadoClass(h.estado)">{{ h.estado }}</span>
+      </div>
+      <div class="item-card-body">
+        <div class="card-image-hero" *ngIf="h.foto">
+          <img [src]="h.foto" alt="Imagen de {{ h.nombre }}" />
+        </div>
+        <div class="card-image-hero card-image-empty" *ngIf="!h.foto">
+          <span class="text-muted">Sin imagen</span>
+        </div>
+        <div class="item-card-meta">
+          <span><strong>Tipo:</strong> {{ h.tipo }}</span>
+          <span><strong>Marca:</strong> {{ h.marca }}</span>
+          <span><strong>Compra:</strong> {{ h.compra | date:'dd/MM/yyyy' }}</span>
+          <span><strong>Vida útil:</strong> {{ h.vidaUtil }} meses</span>
+        </div>
+        <div class="life-bar-wrap" [class.ok]="getVidaInfo(h).ok" [class.expired]="!getVidaInfo(h).ok">
+          {{ getVidaInfo(h).text }}
+        </div>
+      </div>
+      <div class="item-card-footer">
+        <button class="btn-outline btn-icon" (click)="abrirModalEditar(h)">✏️ Editar</button>
+        <button class="btn-danger-soft btn-icon" (click)="eliminar(h.id)">🗑️ Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-search animate-in" *ngIf="!buscando && sinResultadosBusqueda">
+    <div class="empty-search-icon">🔍</div>
+    <h3>No se encontraron resultados</h3>
+    <p>No hay herramientas que coincidan con «{{ busqueda }}»</p>
+  </div>
+  <div class="empty-state full" *ngIf="!buscando && !filtradas.length && !busquedaActiva" style="grid-column:1/-1">No hay herramientas registradas.</div>
 </div>
 
-<div class="modal-backdrop-gesflex" *ngIf="showModal">
-  <div class="modal-gesflex carga-modal">
-    <h3 class="modal-title-gesflex mb-3">
-      {{ isEditMode ? 'Modificar Herramienta' : 'Registrar Nueva Herramienta' }}
-    </h3>
-
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ isEditMode ? 'Editar Herramienta' : 'Agregar Nueva Herramienta' }}</h3>
+      <button type="button" class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
     <form [formGroup]="form" (ngSubmit)="guardar()">
-      <div class="row">
-        
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Nombre de la Herramienta</label>
-          <input type="text" class="form-control" formControlName="nombre" placeholder="Ej. Amoladora Angular, Rotomartillo" />
-          <div class="form-text text-danger" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.errors">
-            El nombre es obligatorio.
+      <div class="modal-body">
+        <p class="modal-intro">Complete los datos de la herramienta</p>
+        <div class="alert-error" *ngIf="formError">{{ formError }}</div>
+        <div class="modal-form-section">
+        <div class="form-grid">
+          <div class="form-group"><label>Nombre <span class="req">*</span></label><input class="form-control-custom" formControlName="nombre" placeholder="Ej: Taladro Inalámbrico" /></div>
+          <div class="form-group"><label>Tipo <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="tipo">
+              <option>Eléctrica</option><option>A Batería</option><option>Manual</option><option>Neumática</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Marca <span class="req">*</span></label><input class="form-control-custom" formControlName="marca" placeholder="Ej: DeWalt" /></div>
+          <div class="form-group"><label>Estado <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="estado">
+              <option>Excelente</option><option>Bueno</option><option>Por reparar</option><option>Mantenimiento</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Fecha de Compra <span class="req">*</span></label><input type="date" class="form-control-custom" formControlName="compra" /></div>
+          <div class="form-group"><label>Fecha de Inicio</label><input type="date" class="form-control-custom" formControlName="inicio" /></div>
+          <div class="form-group"><label>Vida útil (meses) <span class="req">*</span></label><input type="number" min="1" max="600" class="form-control-custom" formControlName="vidaUtil" /><span class="form-hint">Máximo 600 meses (50 años)</span></div>
+          <div class="form-group full">
+            <label>Imagen (opcional)</label>
+            <div class="file-upload-row">
+              <label class="btn-file">📁 Subir archivo<input #fotoInput type="file" accept="image/*" hidden (change)="onFotoSelected($event)" /></label>
+              <span class="file-name" *ngIf="fotoNombre">{{ fotoNombre }}</span>
+            </div>
+            <div class="image-preview-panel">
+              <img *ngIf="fotoPreview" [src]="fotoPreview" alt="Vista previa" />
+              <span *ngIf="!fotoPreview" class="text-muted">La imagen aparecerá aquí</span>
+            </div>
           </div>
         </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Marca</label>
-          <input type="text" class="form-control" formControlName="marca" placeholder="Ej. Makita, DeWalt, Bosch" />
-          <div class="form-text text-danger" *ngIf="form.get('marca')?.touched && form.get('marca')?.errors">
-            La marca es obligatoria.
-          </div>
         </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Tipo de Herramienta</label>
-          <input type="text" class="form-control" formControlName="tipo" placeholder="Ej. Eléctrica, Neumática, Manual" />
-          <div class="form-text text-danger" *ngIf="form.get('tipo')?.touched && form.get('tipo')?.errors">
-            El tipo de herramienta es requerido.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Vida Útil Estimada</label>
-          <input type="text" class="form-control" formControlName="vidaUtil" placeholder="Ej. 5 años, 10,000 horas" />
-          <div class="form-text text-danger" *ngIf="form.get('vidaUtil')?.touched && form.get('vidaUtil')?.errors">
-            La vida útil estimación es requerida.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Fecha de Compra</label>
-          <input type="date" class="form-control" formControlName="compra" />
-          <div class="form-text text-danger" *ngIf="form.get('compra')?.touched && form.get('compra')?.errors">
-            La fecha de adquisición es obligatoria.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Estado Operativo</label>
-          <select class="form-select" formControlName="estado">
-            <option value="Disponible">Disponible</option>
-            <option value="En Uso">En Uso</option>
-            <option value="Mantenimiento">Mantenimiento</option>
-            <option value="Baja">Dada de Baja</option>
-          </select>
-        </div>
-
       </div>
-
-      <div class="actions-row mt-3">
-        <button type="button" class="btn btn-outline-danger" (click)="cerrarModal()">⟵ Cancelar</button>
-        <button type="submit" class="btn btn-danger" [disabled]="form.invalid">
-          {{ isEditMode ? 'Actualizar Cambios' : 'Guardar en Sistema' }}
-        </button>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-primary-dark">{{ isEditMode ? 'Guardar Cambios' : 'Agregar' }}</button>
       </div>
     </form>
   </div>

@@ -1,132 +1,298 @@
 import { Component, OnInit, inject } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+
 import { Header } from '../header/header';
+
 import { HerramientaService } from '../../services/herramienta';
+
 import { Herramienta } from '../../models/herramienta';
 
+import { cacheEntityImage, mergeEntityImages } from '../../utils/image-cache.util';
+import { formValidationMessage } from '../../utils/form-validation.util';
+import { httpErrorMessage } from '../../utils/http-error.util';
+
+
+
 @Component({
+
   selector: 'app-herramienta',
+
   standalone: true,
+
   imports: [CommonModule, ReactiveFormsModule, Header],
+
   templateUrl: './herramienta.html',
-  styleUrl: './herramienta.css'
+
 })
+
 export class HerramientaComponent implements OnInit {
 
   herramientas: Herramienta[] = [];
-  form: FormGroup;
+
+  filtradas: Herramienta[] = [];
+
+  busqueda = '';
+
+  busquedaActiva = false;
+
+  form!: FormGroup;
+
   showModal = false;
+
   isEditMode = false;
-  herramientaIdSeleccionado: number | null = null;
-  
+
+  herramientaId: number | null = null;
+
   buscando = false;
-  mensajeError = '';
+
+  formError = '';
+
+  fotoNombre = '';
+
+  fotoPreview = '';
+
+
 
   private fb = inject(FormBuilder);
-  private router = inject(Router);
-  private herramientaService = inject(HerramientaService);
 
-  constructor() {
-    this.form = this.fb.group({
-      nombre: ['', [Validators.required, Validators.maxLength(100)]],
-      tipo: ['', [Validators.required, Validators.maxLength(100)]],
-      marca: ['', [Validators.required, Validators.maxLength(100)]],
-      estado: ['Disponible', [Validators.required, Validators.maxLength(100)]],
-      compra: ['', [Validators.required]],
-      vidaUtil: ['', [Validators.required, Validators.maxLength(100)]]
-    });
-  }
+  private svc = inject(HerramientaService);
+
+
 
   ngOnInit(): void {
-    this.listarHerramientas();
+
+    this.form = this.fb.group({
+
+      nombre: ['', Validators.required],
+
+      tipo: ['Eléctrica', Validators.required],
+
+      marca: ['', Validators.required],
+
+      estado: ['Excelente', Validators.required],
+
+      compra: ['', Validators.required],
+
+      inicio: [''],
+
+      vidaUtil: ['24', Validators.required],
+
+      foto: [''],
+
+    });
+
+    this.listar();
+
   }
 
-  listarHerramientas(): void {
-    this.buscando = true;
-    this.herramientaService.listar().subscribe({
-      next: (data) => {
-        this.herramientas = data;
-        this.buscando = false;
-      },
-      error: (err) => {
-        console.error(err);
-        this.mensajeError = 'Error al conectar con el microservicio de herramientas.';
-        this.buscando = false;
-      }
-    });
+
+
+  get sinResultadosBusqueda(): boolean {
+
+    return this.busquedaActiva && !this.filtradas.length && this.herramientas.length > 0;
+
   }
+
+
+
+  listar(): void {
+
+    this.buscando = true;
+
+    this.svc.listar().subscribe({
+
+      next: (data) => {
+
+        this.herramientas = mergeEntityImages('herramienta', data);
+
+        this.filtrar();
+
+        this.buscando = false;
+
+      },
+
+      error: () => { this.buscando = false; },
+
+    });
+
+  }
+
+
+
+  filtrar(): void {
+
+    this.busquedaActiva = !!this.busqueda.trim();
+
+    const q = this.busqueda.toLowerCase();
+
+    this.filtradas = this.herramientas.filter(
+
+      (h) => !q || h.nombre?.toLowerCase().includes(q) || h.marca?.toLowerCase().includes(q)
+
+    );
+
+  }
+
+
+
+  getEstadoClass(estado?: string): string {
+
+    const e = (estado || '').toLowerCase();
+
+    if (e.includes('excelente') || e.includes('disponible') || e.includes('bueno')) return 'success';
+
+    if (e.includes('reparar') || e.includes('mantenimiento')) return 'warning';
+
+    return 'info';
+
+  }
+
+
+
+  getVidaInfo(h: Herramienta): { text: string; ok: boolean } {
+
+    if (!h.compra || !h.vidaUtil) return { text: 'Sin datos de vida útil', ok: true };
+
+    const mesesRaw = parseInt(String(h.vidaUtil).replace(/[^\d]/g, ''), 10);
+
+    const meses = Number.isFinite(mesesRaw) && mesesRaw > 0 ? Math.min(mesesRaw, 600) : 24;
+
+    const inicio = new Date(h.compra);
+
+    if (isNaN(inicio.getTime())) return { text: 'Fecha de compra inválida', ok: false };
+
+    const fin = new Date(inicio.getTime());
+
+    fin.setMonth(fin.getMonth() + meses);
+
+    if (isNaN(fin.getTime())) return { text: 'Vida útil fuera de rango (máx. 600 meses)', ok: false };
+
+    const diff = Math.ceil((fin.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+    if (!Number.isFinite(diff)) return { text: 'No se pudo calcular vida útil', ok: true };
+
+    if (diff >= 0) return { text: `${diff} días restantes de vida útil`, ok: true };
+
+    return { text: `Expiró hace ${Math.abs(diff)} días`, ok: false };
+
+  }
+
+
+
+  async onFotoSelected(event: Event): Promise<void> {
+    const { pickImageFromInput } = await import('../../utils/file-maps.util');
+    const picked = await pickImageFromInput(event);
+    if (!picked) return;
+    this.fotoNombre = picked.name;
+    this.fotoPreview = picked.dataUrl;
+    this.form.patchValue({ foto: picked.dataUrl });
+  }
+
+
+
+  abrirModalCrear(): void {
+
+    this.isEditMode = false;
+
+    this.herramientaId = null;
+
+    this.formError = '';
+
+    this.fotoNombre = '';
+
+    this.fotoPreview = '';
+
+    this.form.reset({ tipo: 'Eléctrica', estado: 'Excelente', vidaUtil: '24' });
+
+    this.showModal = true;
+
+  }
+
+
+
+  abrirModalEditar(h: Herramienta): void {
+
+    this.isEditMode = true;
+
+    this.herramientaId = h.id ?? null;
+
+    this.formError = '';
+
+    const compra = h.compra ? String(h.compra).split('T')[0] : '';
+
+    const foto = h.foto || '';
+
+    this.fotoNombre = foto ? 'imagen-cargada' : '';
+
+    this.fotoPreview = foto;
+
+    this.form.patchValue({ ...h, compra, inicio: compra, foto, estado: h.estado || 'Bueno' });
+
+    this.showModal = true;
+
+  }
+
+
+
+  cerrarModal(): void { this.showModal = false; this.formError = ''; }
+
+
 
   guardar(): void {
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.formError = formValidationMessage(this.form);
       return;
     }
 
-    const herramientaData: Herramienta = this.form.value;
+    this.formError = '';
 
-    if (this.isEditMode && this.herramientaIdSeleccionado !== null) {
-      this.herramientaService.actualizar(this.herramientaIdSeleccionado, herramientaData).subscribe({
-        next: () => {
-          alert('Herramienta modificada correctamente');
-          this.cerrarModal();
-          this.listarHerramientas();
-        },
-        error: () => alert('Error al actualizar la herramienta')
-      });
-    } else {
-      this.herramientaService.crear(herramientaData).subscribe({
-        next: () => {
-          alert('Herramienta registrada con éxito');
-          this.cerrarModal();
-          this.listarHerramientas();
-        },
-        error: () => alert('Error al guardar la herramienta')
-      });
-    }
+    const { inicio, ...data } = this.form.value;
+
+    const payload: Herramienta = { ...data, vidaUtil: String(data.vidaUtil) };
+
+    const obs = this.isEditMode && this.herramientaId
+
+      ? this.svc.actualizar(this.herramientaId, payload)
+
+      : this.svc.crear(payload);
+
+    obs.subscribe({
+
+      next: (res) => {
+
+        const id = res.id ?? this.herramientaId;
+
+        if (id && payload.foto) cacheEntityImage('herramienta', id, payload.foto);
+
+        this.cerrarModal();
+
+        this.listar();
+
+      },
+
+      error: (err) => {
+        this.formError = httpErrorMessage(err, 'No se pudo guardar. Verifique ms-herramientas (8085).');
+      },
+
+    });
+
   }
+
+
 
   eliminar(id?: number): void {
-    if (!id) return;
-    if (confirm('¿Está seguro de eliminar esta herramienta?')) {
-      this.herramientaService.eliminar(id).subscribe({
-        next: () => {
-          alert('Herramienta eliminada con éxito');
-          this.listarHerramientas();
-        },
-        error: () => alert('Error al intentar eliminar la herramienta')
-      });
-    }
+
+    if (!id || !confirm('¿Eliminar esta herramienta?')) return;
+
+    this.svc.eliminar(id).subscribe({ next: () => this.listar() });
+
   }
 
-  abrirModalCrear(): void {
-    this.isEditMode = false;
-    this.herramientaIdSeleccionado = null;
-    this.form.reset({ estado: 'Disponible' });
-    this.showModal = true;
-  }
-
-  abrirModalEditar(herramienta: Herramienta): void {
-    this.isEditMode = true;
-    this.herramientaIdSeleccionado = herramienta.id ?? null;
-    
-    // Mapeamos los datos asegurando el formato yyyy-MM-dd para el control HTML date
-    const dataACargar = { ...herramienta };
-    if (herramienta.compra) {
-      dataACargar.compra = JSON.parse(JSON.stringify(herramienta.compra)).split('T')[0];
-    }
-    
-    this.form.patchValue(dataACargar);
-    this.showModal = true;
-  }
-
-  cerrarModal(): void {
-    this.showModal = false;
-    this.form.reset();
-  }
-
-  onAtras(): void {
-    this.router.navigateByUrl('/');
-  }
 }
+
+

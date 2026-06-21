@@ -7,4 +7,5 @@ export class Accesorio {
     categoria?: string;
     marca?: string;
     estado?: string;
+    foto?: string;
 }

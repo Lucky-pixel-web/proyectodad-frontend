@@ -2,13 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Herramienta } from '../models/herramienta';
+import { API } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class HerramientaService {
-  
-  private apiUrl = 'http://localhost:8085/api/herramientas'; 
+  private apiUrl = API.herramientas;
   private http = inject(HttpClient);
 
   listar(): Observable<Herramienta[]> {

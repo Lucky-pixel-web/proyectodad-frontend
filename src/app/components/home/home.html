@@ -1,6 +1,88 @@
 <app-header></app-header>
-<div class="container mt-3">
-    <h1>Home</h1>
-    <hr>
-    
+
+<div class="page-shell">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Reportes</h1>
+      <p class="page-subtitle">Resumen general del sistema de inventario</p>
+    </div>
+  </div>
+
+  <div *ngIf="cargando" class="text-center py-5"><div class="spinner"></div></div>
+
+  <ng-container *ngIf="!cargando">
+    <div class="stats-grid">
+      <div class="stat-card purple animate-in" style="animation-delay:0.05s">
+        <div><div class="stat-label">Herramientas</div><div class="stat-value">{{ totalHerramientas }}</div></div>
+        <div class="stat-icon">🔧</div>
+      </div>
+      <div class="stat-card green animate-in" style="animation-delay:0.1s">
+        <div><div class="stat-label">Accesorios</div><div class="stat-value">{{ totalAccesorios }}</div></div>
+        <div class="stat-icon">📦</div>
+      </div>
+      <div class="stat-card yellow animate-in" style="animation-delay:0.15s">
+        <div><div class="stat-label">Proyectos</div><div class="stat-value">{{ totalProyectos }}</div></div>
+        <div class="stat-icon">📁</div>
+      </div>
+      <div class="stat-card blue animate-in" style="animation-delay:0.2s">
+        <div><div class="stat-label">Melamine</div><div class="stat-value">{{ totalMelamine }}</div></div>
+        <div class="stat-icon">🪵</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card animate-in" style="animation-delay:0.1s">
+        <h3 class="chart-title">Estado de Herramientas</h3>
+        <p class="chart-subtitle">Distribución por estado operativo</p>
+        <div class="bar-chart" *ngIf="estadoHerramientas.length; else noHerr">
+          <div class="bar-row" *ngFor="let item of estadoHerramientas">
+            <span class="bar-label">{{ item.label }}</span>
+            <div class="bar-track"><div class="bar-fill purple" [style.width.%]="item.pct"></div></div>
+            <span class="bar-value">{{ item.value }}</span>
+          </div>
+        </div>
+        <ng-template #noHerr><p class="empty-state">Sin datos</p></ng-template>
+      </div>
+
+      <div class="chart-card animate-in" style="animation-delay:0.15s">
+        <h3 class="chart-title">Accesorios por Categoría</h3>
+        <p class="chart-subtitle">Cantidad por tipo de accesorio</p>
+        <div class="bar-chart" *ngIf="categoriasAccesorios.length; else noAcc">
+          <div class="bar-row" *ngFor="let item of categoriasAccesorios">
+            <span class="bar-label">{{ item.label }}</span>
+            <div class="bar-track"><div class="bar-fill green" [style.width.%]="item.pct"></div></div>
+            <span class="bar-value">{{ item.value }}</span>
+          </div>
+        </div>
+        <ng-template #noAcc><p class="empty-state">Sin datos</p></ng-template>
+      </div>
+
+      <div class="chart-card animate-in" style="animation-delay:0.2s">
+        <h3 class="chart-title">Proyectos Registrados</h3>
+        <p class="chart-subtitle">Total de obras activas</p>
+        <div class="stat-value" style="font-size:3rem;text-align:center;padding:1rem 0">{{ totalProyectos }}</div>
+      </div>
+    </div>
+
+    <div class="chart-card animate-in" style="animation-delay:0.25s">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+        <div>
+          <h3 class="chart-title">👤 Usuarios del Sistema</h3>
+          <p class="chart-subtitle">Personal interno — gestión desde el módulo Usuarios</p>
+        </div>
+        <a *ngIf="isAdmin" routerLink="/usuarios" class="btn-primary-dark" style="text-decoration:none;font-size:0.82rem">Gestionar Usuarios →</a>
+      </div>
+      <div class="stats-grid" style="margin-bottom:1rem">
+        <div class="stat-card purple"><div><div class="stat-label">Administradores</div><div class="stat-value">{{ totalAdmins }}</div></div><div class="stat-icon">👤</div></div>
+        <div class="stat-card blue"><div><div class="stat-label">Almaceneros</div><div class="stat-value">{{ totalUsers }}</div></div><div class="stat-icon">👤</div></div>
+      </div>
+      <div class="bar-chart">
+        <div class="bar-row" *ngFor="let item of tiposUsuarios">
+          <span class="bar-label">{{ item.label }}</span>
+          <div class="bar-track"><div class="bar-fill blue" [style.width.%]="item.pct"></div></div>
+          <span class="bar-value">{{ item.value }}</span>
+        </div>
+      </div>
+    </div>
+  </ng-container>
 </div>

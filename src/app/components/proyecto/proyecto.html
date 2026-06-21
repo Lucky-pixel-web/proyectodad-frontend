@@ -1,138 +1,110 @@
 <app-header></app-header>
-
-<div class="solicitud-layout">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="title-page mb-0">Control de Proyectos</h1>
-    <button type="button" class="btn btn-danger" (click)="abrirModalCrear()">
-      <span class="add-icon">+</span> Nuevo Proyecto
-    </button>
+<div class="page-shell">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Proyectos</h1>
+      <p class="page-subtitle">Administre el registro de proyectos e incidentes</p>
+    </div>
+    <button class="btn-primary-dark" (click)="abrirModalCrear()">+ Agregar Proyecto</button>
   </div>
 
-  <section class="card-section">
-    <h5 class="section-title">Obras y Proyectos Activos</h5>
-    
-    <div class="table-responsive mt-3">
-      <table class="table table-hover align-middle">
-        <thead>
-          <tr>
-            <th>Nombre Proyecto</th>
-            <th>Ubicación / Dirección</th>
-            <th>Cliente Responsable</th>
-            <th>Herramienta Asignada</th>
-            <th>Accesorio Vinculado</th>
-            <th class="text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let p of proyectos">
-            <td>{{ p.nombre }}</td>
-            <td>{{ p.direccion }}</td>
-            <td class="fw-medium text-dark">{{ getNombreCliente(p.clienteId) }}</td>
-            <td>{{ getNombreHerramienta(p.herramientaId) }}</td>
-            <td>{{ getNombreAccesorio(p.accesorioId) }}</td>
-            <td class="text-center">
-              <button class="btn btn-outline-primary btn-sm me-2" (click)="abrirModalEditar(p)">
-                Editar
-              </button>
-              <button class="btn btn-danger btn-sm" (click)="eliminar(p.id)">
-                Eliminar
-              </button>
-            </td>
-          </tr>
+  <div class="stats-grid">
+    <div class="stat-card purple"><div><div class="stat-label">Total Proyectos</div><div class="stat-value">{{ totalProyectos }}</div><small class="text-muted">proyectos registrados</small></div><div class="stat-icon">✓</div></div>
+    <div class="stat-card green"><div><div class="stat-label">Proyectos Perfectos</div><div class="stat-value">{{ perfectos }}</div><small class="text-muted">sin incidentes</small></div><div class="stat-icon">✓</div></div>
+    <div class="stat-card yellow"><div><div class="stat-label">Con Problemas</div><div class="stat-value">{{ conProblemas }}</div><small class="text-muted">con incidentes</small></div><div class="stat-icon">!</div></div>
+  </div>
 
-          <tr *ngIf="buscando">
-            <td colspan="6" class="text-center text-muted py-4">
-              <div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
-              Orquestando datos de los microservicios...
-            </td>
-          </tr>
-
-          <tr *ngIf="proyectos.length === 0 && !buscando">
-            <td colspan="6" class="text-center text-muted py-4">
-              No hay proyectos activos registrados.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  <div class="toolbar-row">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Buscar por nombre, cliente o ubicación..." [value]="busqueda" (input)="busqueda = $any($event.target).value" (keyup.enter)="filtrar()" />
     </div>
-  </section>
+    <button type="button" class="btn-search" (click)="filtrar()">Buscar</button>
+    <div class="filter-pills">
+      <button class="filter-pill" [class.active]="filtroEstado === 'Todos'" (click)="setFiltro('Todos')">Todos</button>
+      <button class="filter-pill" [class.active]="filtroEstado === 'Perfectos'" (click)="setFiltro('Perfectos')">Perfectos</button>
+      <button class="filter-pill" [class.active]="filtroEstado === 'Con Problemas'" (click)="setFiltro('Con Problemas')">Con Problemas</button>
+    </div>
+  </div>
 
-  <div class="actions-row mt-4">
-    <button type="button" class="btn btn-outline-danger" (click)="onAtras()">⟵ Menú Principal</button>
+  <div class="cards-grid" *ngIf="!buscando && filtrados.length">
+    <div class="item-card" *ngFor="let p of filtrados; let i = index" [style.animation-delay.ms]="i * 60">
+      <div class="item-card-header">
+        <h3 class="item-card-title">{{ p.nombre }}</h3>
+        <span class="badge-status" [ngClass]="getClasificacion(p) === 'Perfecto' ? 'success' : 'warning'">{{ getClasificacion(p) }}</span>
+      </div>
+      <div class="item-card-body">
+        <div class="item-card-meta">
+          <span>👤 <strong>Cliente:</strong> {{ getNombreCliente(p.clienteId) }}</span>
+          <span>📍 <strong>Ubicación:</strong> {{ p.direccion }}</span>
+        </div>
+        <div class="life-bar-wrap ok" style="margin-top:0.75rem">Incidentes / Lecciones: Ninguno</div>
+      </div>
+      <div class="item-card-footer">
+        <button class="btn-outline btn-icon" (click)="abrirModalEditar(p)">✏️ Editar</button>
+        <button class="btn-danger-soft btn-icon" (click)="eliminar(p.id)">🗑️ Eliminar</button>
+      </div>
+    </div>
+  </div>
+  <div class="empty-search animate-in" *ngIf="!buscando && sinResultadosBusqueda">
+    <div class="empty-search-icon">🔍</div>
+    <h3>No se encontraron resultados</h3>
+    <p>No hay proyectos que coincidan con «{{ busqueda }}»</p>
+  </div>
+  <div class="empty-search animate-in" *ngIf="!buscando && !filtrados.length && !busquedaActiva">
+    <div class="empty-search-icon">📁</div>
+    <h3>No hay proyectos registrados</h3>
+    <p>Use «+ Agregar Proyecto» para crear el primero.</p>
   </div>
 </div>
 
-<div class="modal-backdrop-gesflex" *ngIf="showModal">
-  <div class="modal-gesflex carga-modal">
-    <h3 class="modal-title-gesflex mb-3">
-      {{ isEditMode ? 'Actualizar Parámetros de Obra' : 'Configurar Nueva Obra' }}
-    </h3>
-
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ isEditMode ? 'Editar Proyecto' : 'Agregar Nuevo Proyecto' }}</h3>
+      <button type="button" class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
     <form [formGroup]="form" (ngSubmit)="guardar()">
-      <div class="row">
-        
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Nombre del Proyecto</label>
-          <input type="text" class="form-control" formControlName="nombre" placeholder="Ej. Edificio Las Gardenias, Proyecto Vial Sur" />
-          <div class="form-text text-danger" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.errors">
-            El nombre de la obra es requerido.
+      <div class="modal-body">
+        <p class="modal-intro">Complete los datos del proyecto</p>
+        <div class="alert-error" *ngIf="formError">{{ formError }}</div>
+        <div class="modal-form-section">
+        <div class="form-grid">
+          <div class="form-group full"><label>Nombre del Proyecto <span class="req">*</span></label><input class="form-control-custom" formControlName="nombre" /></div>
+          <div class="form-group full"><label>Descripción <span class="req">*</span></label><textarea class="form-control-custom" rows="2" formControlName="descripcion"></textarea></div>
+          <div class="form-group"><label>Cliente <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="clienteId" *ngIf="clientes.length">
+              <option *ngFor="let c of clientes" [ngValue]="c.id">{{ c.nombre }} {{ c.apellido }}</option>
+            </select>
+            <p class="form-hint warn" *ngIf="!clientes.length">No hay clientes en ms-clientes (8083). Se intentará crear datos iniciales al cargar la página.</p>
           </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Dirección Ejecutiva</label>
-          <input type="text" class="form-control" formControlName="direccion" placeholder="Ej. Km 15 Panamericana Sur..." />
-          <div class="form-text text-danger" *ngIf="form.get('direccion')?.touched && form.get('direccion')?.errors">
-            La dirección es obligatoria.
+          <div class="form-group full">
+            <label>Ubicación <span class="req">*</span></label>
+            <input class="form-control-custom" formControlName="direccion" placeholder="Escriba la dirección del proyecto..." />
+            <app-maps-planet [query]="mapsQuery" label="Ver ubicación en tiempo real" />
           </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <label class="form-label fw-semibold">Asignar Cliente</label>
-          <select class="form-select" formControlName="clienteId">
-            <option value="" disabled>Seleccione un cliente...</option>
-            <option *ngFor="let c of clientes" [value]="c.id">
-              {{ c.nombre }} {{ c.apellido }} (DNI: {{ c.dni }})
-            </option>
-          </select>
-          <div class="form-text text-danger" *ngIf="form.get('clienteId')?.touched && form.get('clienteId')?.errors">
-            Debe definir un cliente comercial.
+          <div class="form-group"><label>Herramienta <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="herramientaId" *ngIf="herramientas.length">
+              <option *ngFor="let h of herramientas" [ngValue]="h.id">{{ h.nombre }}</option>
+            </select>
+            <p class="form-hint warn" *ngIf="!herramientas.length">No hay herramientas. Registre al menos una en el módulo Herramientas.</p>
           </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <label class="form-label fw-semibold">Vincular Herramienta Principal</label>
-          <select class="form-select" formControlName="herramientaId">
-            <option value="" disabled>Seleccione herramienta...</option>
-            <option *ngFor="let h of herramientas" [value]="h.id">
-              {{ h.nombre }} - {{ h.marca }} ({{ h.estado }})
-            </option>
-          </select>
-          <div class="form-text text-danger" *ngIf="form.get('herramientaId')?.touched && form.get('herramientaId')?.errors">
-            Seleccione un equipo del inventario.
+          <div class="form-group"><label>Accesorio <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="accesorioId" *ngIf="accesorios.length">
+              <option *ngFor="let a of accesorios" [ngValue]="a.id">{{ a.nombre }}</option>
+            </select>
+            <p class="form-hint warn" *ngIf="!accesorios.length">No hay accesorios. Registre al menos uno en el módulo Accesorios.</p>
           </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <label class="form-label fw-semibold">Vincular Accesorio / Consumible</label>
-          <select class="form-select" formControlName="accesorioId">
-            <option value="" disabled>Seleccione accesorio...</option>
-            <option *ngFor="let a of accesorios" [value]="a.id">
-              {{ a.nombre }} - Stock: {{ a.stock }} u.
-            </option>
-          </select>
-          <div class="form-text text-danger" *ngIf="form.get('accesorioId')?.touched && form.get('accesorioId')?.errors">
-            Seleccione un accesorio del inventario.
+          <div class="form-group"><label>Clasificación <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="clasificacion"><option>Perfecto</option><option>Con Problemas</option></select>
           </div>
+          <div class="form-group full"><label>Incidentes / Lecciones Aprendidas <span class="req">*</span></label><textarea class="form-control-custom" rows="2" formControlName="incidentes"></textarea></div>
         </div>
-
+        </div>
       </div>
-
-      <div class="actions-row mt-3">
-        <button type="button" class="btn btn-outline-danger" (click)="cerrarModal()">⟵ Cancelar</button>
-        <button type="submit" class="btn btn-danger" [disabled]="form.invalid">
-          {{ isEditMode ? 'Modificar Proyecto' : 'Lanzar Proyecto' }}
-        </button>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-primary-dark">{{ isEditMode ? 'Guardar Cambios' : 'Agregar' }}</button>
       </div>
     </form>
   </div>

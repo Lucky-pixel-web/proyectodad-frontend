@@ -1,54 +1,128 @@
 import { Injectable, inject } from '@angular/core';
+
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+
+import { Observable, of, forkJoin } from 'rxjs';
+
+import { catchError, switchMap } from 'rxjs/operators';
+
 import { Cliente } from '../models/cliente';
 
+import { API } from '../config/api.config';
+
+
+
+const CLIENTES_INICIALES: Omit<Cliente, 'id'>[] = [
+
+  { nombre: 'Juan', apellido: 'Pérez', dni: '12345678', correo: 'juan.perez@demo.com', telefono: '999888777', direccion: 'Lima' },
+
+  { nombre: 'María', apellido: 'García', dni: '87654321', correo: 'maria.garcia@demo.com', telefono: '988777666', direccion: 'Arequipa' },
+
+];
+
+
+
 @Injectable({
+
   providedIn: 'root'
+
 })
+
 export class ClienteService {
-  // Apuntamos al puerto 8083 de tu microservicio ms-clientes
-  private apiUrl = 'http://localhost:8083/api/clientes'; 
-  
+
+  private apiUrl = API.clientes;
+
   private http = inject(HttpClient);
 
-  // @GetMapping -> listar()
+
+
   listar(): Observable<Cliente[]> {
-    return this.http.get<Cliente[]>(this.apiUrl);
+
+    return this.http.get<Cliente[]>(this.apiUrl).pipe(
+
+      switchMap((list) => (list?.length ? of(list) : this.seedClientes())),
+
+      catchError(() => this.seedClientes())
+
+    );
+
   }
 
-  // @GetMapping("/{id}") -> buscarPorId(@PathVariable Long id)
+
+
+  private seedClientes(): Observable<Cliente[]> {
+
+    const posts = CLIENTES_INICIALES.map((c) =>
+
+      this.http.post<Cliente>(this.apiUrl, c).pipe(catchError(() => of(null)))
+
+    );
+
+    return forkJoin(posts).pipe(
+
+      switchMap(() => this.http.get<Cliente[]>(this.apiUrl)),
+
+      catchError(() => of([]))
+
+    );
+
+  }
+
+
+
   buscarPorId(id: number): Observable<Cliente> {
+
     return this.http.get<Cliente>(`${this.apiUrl}/${id}`);
+
   }
 
-  // @GetMapping("/dni/{dni}") -> buscarPorDni(@PathVariable String dni)
+
+
   buscarPorDni(dni: string): Observable<Cliente> {
+
     return this.http.get<Cliente>(`${this.apiUrl}/dni/${dni}`);
+
   }
 
-  // @GetMapping("/buscar") -> buscarPorNombre(@RequestParam String nombre)
+
+
   buscarPorNombre(nombre: string): Observable<Cliente[]> {
+
     return this.http.get<Cliente[]>(`${this.apiUrl}/buscar?nombre=${nombre}`);
+
   }
 
-  // @GetMapping("/apellido/{apellido}") -> buscarPorApellido(@PathVariable String apellido)
+
+
   buscarPorApellido(apellido: string): Observable<Cliente[]> {
+
     return this.http.get<Cliente[]>(`${this.apiUrl}/apellido/${apellido}`);
+
   }
 
-  // @PostMapping -> crear(@Valid @RequestBody ClienteRequest request)
+
+
   crear(cliente: Cliente): Observable<Cliente> {
+
     return this.http.post<Cliente>(this.apiUrl, cliente);
+
   }
 
-  // @PutMapping("/{id}") -> actualizar(@PathVariable Long id, @Valid @RequestBody ClienteRequest request)
+
+
   actualizar(id: number, cliente: Cliente): Observable<Cliente> {
+
     return this.http.put<Cliente>(`${this.apiUrl}/${id}`, cliente);
+
   }
 
-  // @DeleteMapping("/{id}") -> eliminar(@PathVariable Long id)
+
+
   eliminar(id: number): Observable<void> {
+
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+
   }
+
 }
+

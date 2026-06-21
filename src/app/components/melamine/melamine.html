@@ -1,0 +1,108 @@
+<app-header></app-header>
+<div class="page-shell">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Melamine</h1>
+      <p class="page-subtitle">Administre el inventario de melamine</p>
+    </div>
+    <button class="btn-primary-dark" (click)="abrirModalCrear()">+ Agregar Melamine</button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card green"><div><div class="stat-label">Bueno</div><div class="stat-value">{{ countBueno }}</div><small class="text-muted">melamines</small></div><div class="stat-icon">✓</div></div>
+    <div class="stat-card yellow"><div><div class="stat-label">Regular</div><div class="stat-value">{{ countRegular }}</div><small class="text-muted">melamines</small></div><div class="stat-icon">!</div></div>
+    <div class="stat-card red"><div><div class="stat-label">Malo</div><div class="stat-value">{{ countMalo }}</div><small class="text-muted">melamines</small></div><div class="stat-icon">✕</div></div>
+  </div>
+
+  <div class="toolbar-row">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Buscar por nombre, color o marca..." [value]="busqueda" (input)="busqueda = $any($event.target).value" (keyup.enter)="filtrar()" />
+    </div>
+    <button type="button" class="btn-search" (click)="filtrar()">Buscar</button>
+    <div class="filter-pills">
+      <button class="filter-pill" [class.active]="filtroEstado === 'Todos'" (click)="setFiltro('Todos')">Todos</button>
+      <button class="filter-pill" [class.active]="filtroEstado === 'Bueno'" (click)="setFiltro('Bueno')">Bueno</button>
+      <button class="filter-pill" [class.active]="filtroEstado === 'Regular'" (click)="setFiltro('Regular')">Regular</button>
+      <button class="filter-pill" [class.active]="filtroEstado === 'Malo'" (click)="setFiltro('Malo')">Malo</button>
+    </div>
+  </div>
+
+  <div class="cards-grid" *ngIf="!buscando && filtrados.length">
+    <div class="item-card" *ngFor="let m of filtrados; let i = index" [style.animation-delay.ms]="i * 60">
+      <div class="item-card-header">
+        <h3 class="item-card-title mb-0">{{ getDisplayName(m) }}</h3>
+        <span class="badge-status" [ngClass]="getEstadoClass(m.estadoNombre)">{{ m.estadoNombre || 'N/A' }}</span>
+      </div>
+      <div class="item-card-body">
+        <div class="card-image-hero" *ngIf="m.foto"><img [src]="m.foto" alt="" /></div>
+        <div style="background:#f8fafc;border-radius:8px;padding:0.65rem 0.85rem;margin-bottom:0.75rem;font-size:0.82rem">
+          📐 {{ m.ancho }} x {{ m.largo }} mm ({{ (m.ancho! / 1000).toFixed(2) }}m x {{ (m.largo! / 1000).toFixed(2) }}m)
+        </div>
+        <div class="item-card-meta">
+          <span><strong>Color:</strong> <span class="badge-status info">{{ m.color }}</span></span>
+          <span><strong>Marca:</strong> {{ m.marca }}</span>
+        </div>
+      </div>
+      <div class="item-card-footer">
+        <button class="btn-outline btn-icon" (click)="abrirModalEditar(m)">✏️ Editar</button>
+        <button class="btn-danger-soft btn-icon" (click)="eliminar(m.id)">🗑️ Eliminar</button>
+      </div>
+    </div>
+  </div>
+  <div class="empty-search animate-in" *ngIf="!buscando && sinResultadosBusqueda">
+    <div class="empty-search-icon">🔍</div>
+    <h3>No se encontraron resultados</h3>
+    <p>No hay melamine que coincida con «{{ busqueda }}»</p>
+  </div>
+  <div class="empty-search animate-in" *ngIf="!buscando && !filtrados.length && !busquedaActiva">
+    <div class="empty-search-icon">🪵</div>
+    <h3>No hay melamine registrado</h3>
+    <p>Use «+ Agregar Melamine» para crear el primero.</p>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ isEditMode ? 'Editar Melamine' : 'Agregar Nuevo Melamine' }}</h3>
+      <button type="button" class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="modal-body">
+        <p class="modal-intro">Complete los datos del melamine</p>
+        <div class="alert-error" *ngIf="formError">{{ formError }}</div>
+        <div class="modal-form-section">
+        <div class="form-grid">
+          <div class="form-group full"><label>Nombre <span class="req">*</span></label><input class="form-control-custom" formControlName="nombre" placeholder="Ej: Melamine Blanco" /></div>
+          <div class="form-group"><label>Ancho (mm) <span class="req">*</span></label><input type="number" class="form-control-custom" formControlName="ancho" /></div>
+          <div class="form-group"><label>Largo (mm) <span class="req">*</span></label><input type="number" class="form-control-custom" formControlName="largo" /></div>
+          <div class="form-group"><label>Color <span class="req">*</span></label><input class="form-control-custom" formControlName="color" /></div>
+          <div class="form-group"><label>Marca <span class="req">*</span></label><input class="form-control-custom" formControlName="marca" /></div>
+          <div class="form-group"><label>Estado <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="estadoId" *ngIf="estados.length">
+              <option *ngFor="let e of estados" [ngValue]="e.id">{{ e.nombre }}</option>
+            </select>
+            <p class="form-hint warn" *ngIf="!estados.length">No se cargaron estados. Verifique ms-estado (8084) y recargue.</p>
+          </div>
+          <div class="form-group full">
+            <label>Imagen (opcional)</label>
+            <div class="file-upload-row">
+              <label class="btn-file">📁 Subir archivo<input type="file" accept="image/*" hidden (change)="onFotoSelected($event)" /></label>
+              <span class="file-name" *ngIf="fotoNombre">{{ fotoNombre }}</span>
+            </div>
+            <div class="image-preview-panel">
+              <img *ngIf="fotoPreview" [src]="fotoPreview" alt="Vista previa" />
+              <span *ngIf="!fotoPreview" class="text-muted">La imagen aparecerá aquí</span>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-primary-dark">{{ isEditMode ? 'Guardar Cambios' : 'Agregar' }}</button>
+      </div>
+    </form>
+  </div>
+</div>

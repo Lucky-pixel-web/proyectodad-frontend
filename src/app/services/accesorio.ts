@@ -2,14 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Accesorio } from '../models/accesorio';
+import { API } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AccesorioService {
-  
-  // Recuerda ajustar el puerto según el properties de tu microservicio ms-accesorios
-  private apiUrl = 'http://localhost:8081/api/accesorios'; 
+  private apiUrl = API.accesorios; 
   
   private http = inject(HttpClient);
 

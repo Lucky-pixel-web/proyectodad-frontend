@@ -6,4 +6,5 @@ export class Herramienta {
     estado?: string;
     compra?: Date;
     vidaUtil?: string;
+    foto?: string;
 }

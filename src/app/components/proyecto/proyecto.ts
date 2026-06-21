@@ -1,162 +1,188 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { Header } from '../header/header';
-
-// Servicios Necesarios para la Orquestación
+import { MapsPlanet } from '../maps-planet/maps-planet';
 import { ProyectoService } from '../../services/proyecto';
 import { ClienteService } from '../../services/cliente';
 import { HerramientaService } from '../../services/herramienta';
 import { AccesorioService } from '../../services/accesorio';
-
-// Modelos
 import { Proyecto } from '../../models/proyecto';
 import { Cliente } from '../../models/cliente';
 import { Herramienta } from '../../models/herramienta';
 import { Accesorio } from '../../models/accesorio';
+import { httpErrorMessage } from '../../utils/http-error.util';
+import { formValidationMessage } from '../../utils/form-validation.util';
 
 @Component({
   selector: 'app-proyecto',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, Header],
+  imports: [CommonModule, ReactiveFormsModule, Header, MapsPlanet],
   templateUrl: './proyecto.html',
-  styleUrl: './proyecto.css'
 })
 export class ProyectoComponent implements OnInit {
-
   proyectos: Proyecto[] = [];
+  filtrados: Proyecto[] = [];
   clientes: Cliente[] = [];
   herramientas: Herramienta[] = [];
   accesorios: Accesorio[] = [];
-
-  form: FormGroup;
+  busqueda = '';
+  filtroEstado = 'Todos';
+  form!: FormGroup;
   showModal = false;
   isEditMode = false;
-  proyectoIdSeleccionado: number | null = null;
+  proyectoId: number | null = null;
   buscando = false;
+  formError = '';
+  busquedaActiva = false;
 
   private fb = inject(FormBuilder);
-  private router = inject(Router);
-  private proyectoService = inject(ProyectoService);
-  private clienteService = inject(ClienteService);
-  private herramientaService = inject(HerramientaService);
-  private accesorioService = inject(AccesorioService);
-
-  constructor() {
-    this.form = this.fb.group({
-      nombre: ['', [Validators.required, Validators.maxLength(100)]],
-      direccion: ['', [Validators.required, Validators.maxLength(150)]],
-      clienteId: ['', [Validators.required]],
-      herramientaId: ['', [Validators.required]],
-      accesorioId: ['', [Validators.required]]
-    });
-  }
+  private proyectoSvc = inject(ProyectoService);
+  private clienteSvc = inject(ClienteService);
+  private herramientaSvc = inject(HerramientaService);
+  private accesorioSvc = inject(AccesorioService);
 
   ngOnInit(): void {
-    this.listarProyectos();
-    this.cargarCatalogosAuxiliares();
-  }
-
-  listarProyectos(): void {
-    this.buscando = true;
-    this.proyectoService.listar().subscribe({
-      next: (data) => {
-        this.proyectos = data;
-        this.buscando = false;
+    this.form = this.fb.group({
+      nombre: ['', Validators.required],
+      descripcion: ['Proyecto registrado en el sistema', Validators.required],
+      direccion: ['', Validators.required],
+      clasificacion: ['Perfecto', Validators.required],
+      incidentes: ['Ninguno', Validators.required],
+      clienteId: [null as number | null, Validators.required],
+      herramientaId: [null as number | null, Validators.required],
+      accesorioId: [null as number | null, Validators.required],
+    });
+    this.listar();
+    this.clienteSvc.listar().subscribe({
+      next: (d) => {
+        this.clientes = d;
+        if (d.length && !this.form.get('clienteId')?.value) {
+          this.form.patchValue({ clienteId: d[0].id });
+        }
       },
-      error: (err) => {
-        console.error(err);
-        this.buscando = false;
-      }
+      error: () => { this.clientes = []; },
+    });
+    this.herramientaSvc.listar().subscribe({
+      next: (d) => {
+        this.herramientas = d;
+        if (d.length) this.form.patchValue({ herramientaId: d[0].id });
+      },
+      error: () => { this.herramientas = []; },
+    });
+    this.accesorioSvc.listar().subscribe({
+      next: (d) => {
+        this.accesorios = d;
+        if (d.length) this.form.patchValue({ accesorioId: d[0].id });
+      },
+      error: () => { this.accesorios = []; },
     });
   }
 
-  cargarCatalogosAuxiliares(): void {
-    // Carga de catálogos en paralelo para poblar las llaves foráneas en los selects
-    this.clienteService.listar().subscribe(data => this.clientes = data);
-    this.herramientaService.listar().subscribe(data => this.herramientas = data);
-    this.accesorioService.listar().subscribe(data => this.accesorios = data);
+  get totalProyectos() { return this.proyectos.length; }
+  get perfectos() { return this.proyectos.filter((p) => this.getClasificacion(p) === 'Perfecto').length; }
+  get conProblemas() { return this.totalProyectos - this.perfectos; }
+
+  getClasificacion(p: Proyecto): string {
+    return (p as any).clasificacion || 'Perfecto';
   }
 
-  // Métodos auxiliares para mostrar nombres en la tabla principal en lugar de IDs crudos
   getNombreCliente(id?: number): string {
-    const c = this.clientes.find(item => item.id === id);
-    return c ? `${c.nombre} ${c.apellido}` : `ID: ${id}`;
+    const c = this.clientes.find((x) => x.id === id);
+    return c ? `${c.nombre} ${c.apellido}` : '—';
   }
 
-  getNombreHerramienta(id?: number): string {
-    const h = this.herramientas.find(item => item.id === id);
-    return h ? `${h.nombre} (${h.marca})` : `ID: ${id}`;
+  listar(): void {
+    this.buscando = true;
+    this.proyectoSvc.listar().subscribe({
+      next: (data) => { this.proyectos = data; this.filtrar(); this.buscando = false; },
+      error: () => { this.buscando = false; },
+    });
   }
 
-  getNombreAccesorio(id?: number): string {
-    const a = this.accesorios.find(item => item.id === id);
-    return a ? `${a.nombre}` : `ID: ${id}`;
+  get sinResultadosBusqueda(): boolean {
+    return this.busquedaActiva && !this.filtrados.length && this.proyectos.length > 0;
   }
+
+  filtrar(): void {
+    this.busquedaActiva = !!this.busqueda.trim();
+    const q = this.busqueda.toLowerCase();
+    this.filtrados = this.proyectos.filter((p) => {
+      const matchQ = !q || p.nombre?.toLowerCase().includes(q) || p.direccion?.toLowerCase().includes(q) || this.getNombreCliente(p.clienteId).toLowerCase().includes(q);
+      const cls = this.getClasificacion(p);
+      const matchF = this.filtroEstado === 'Todos' || (this.filtroEstado === 'Perfectos' && cls === 'Perfecto') || (this.filtroEstado === 'Con Problemas' && cls !== 'Perfecto');
+      return matchQ && matchF;
+    });
+  }
+
+  setFiltro(f: string): void { this.filtroEstado = f; this.filtrar(); }
+
+  abrirModalCrear(): void {
+    this.isEditMode = false;
+    this.proyectoId = null;
+    this.formError = '';
+    this.form.reset({
+      clasificacion: 'Perfecto',
+      incidentes: 'Ninguno',
+      descripcion: 'Proyecto registrado en el sistema',
+      clienteId: this.clientes[0]?.id ?? null,
+      herramientaId: this.herramientas[0]?.id ?? null,
+      accesorioId: this.accesorios[0]?.id ?? null,
+    });
+    this.showModal = true;
+  }
+
+  abrirModalEditar(p: Proyecto): void {
+    this.isEditMode = true;
+    this.proyectoId = p.id ?? null;
+    this.formError = '';
+    this.form.patchValue({
+      nombre: p.nombre || '',
+      direccion: p.direccion || '',
+      clienteId: p.clienteId ?? this.clientes[0]?.id ?? null,
+      herramientaId: p.herramientaId ?? this.herramientas[0]?.id ?? null,
+      accesorioId: p.accesorioId ?? this.accesorios[0]?.id ?? null,
+      descripcion: (p as any).descripcion || 'Proyecto registrado en el sistema',
+      clasificacion: this.getClasificacion(p),
+      incidentes: (p as any).incidentes || 'Ninguno',
+    });
+    this.showModal = true;
+  }
+
+  cerrarModal(): void { this.showModal = false; this.formError = ''; }
 
   guardar(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.formError = formValidationMessage(this.form);
       return;
     }
-
-    const proyectoData: Proyecto = this.form.value;
-
-    if (this.isEditMode && this.proyectoIdSeleccionado !== null) {
-      this.proyectoService.actualizar(this.proyectoIdSeleccionado, proyectoData).subscribe({
-        next: () => {
-          alert('Proyecto actualizado con éxito');
-          this.cerrarModal();
-          this.listarProyectos();
-        },
-        error: () => alert('Error al actualizar el proyecto')
-      });
-    } else {
-      this.proyectoService.crear(proyectoData).subscribe({
-        next: () => {
-          alert('Proyecto registrado con éxito');
-          this.cerrarModal();
-          this.listarProyectos();
-        },
-        error: () => alert('Error al guardar el proyecto')
-      });
-    }
+    this.formError = '';
+    const v = this.form.value;
+    const payload = {
+      nombre: v.nombre,
+      direccion: v.direccion,
+      clienteId: Number(v.clienteId),
+      herramientaId: Number(v.herramientaId),
+      accesorioId: Number(v.accesorioId),
+    };
+    const obs = this.isEditMode && this.proyectoId
+      ? this.proyectoSvc.actualizar(this.proyectoId, payload as Proyecto)
+      : this.proyectoSvc.crear(payload as Proyecto);
+    obs.subscribe({
+      next: () => { this.cerrarModal(); this.listar(); },
+      error: (err) => {
+        this.formError = httpErrorMessage(err, 'No se pudo guardar. Cree al menos un cliente, una herramienta y un accesorio antes de registrar proyectos.');
+      },
+    });
   }
 
   eliminar(id?: number): void {
-    if (!id) return;
-    if (confirm('¿Está seguro de eliminar este proyecto y liberar sus recursos asignados?')) {
-      this.proyectoService.eliminar(id).subscribe({
-        next: () => {
-          alert('Proyecto eliminado de forma correcta');
-          this.listarProyectos();
-        },
-        error: () => alert('Error al eliminar el proyecto')
-      });
-    }
+    if (!id || !confirm('¿Eliminar este proyecto?')) return;
+    this.proyectoSvc.eliminar(id).subscribe({ next: () => this.listar() });
   }
 
-  abrirModalCrear(): void {
-    this.isEditMode = false;
-    this.proyectoIdSeleccionado = null;
-    this.form.reset({ clienteId: '', herramientaId: '', accesorioId: '' });
-    this.showModal = true;
-  }
-
-  abrirModalEditar(proyecto: Proyecto): void {
-    this.isEditMode = true;
-    this.proyectoIdSeleccionado = proyecto.id ?? null;
-    this.form.patchValue(proyecto);
-    this.showModal = true;
-  }
-
-  cerrarModal(): void {
-    this.showModal = false;
-    this.form.reset();
-  }
-
-  onAtras(): void {
-    this.router.navigateByUrl('/');
+  get mapsQuery(): string {
+    return this.form.get('direccion')?.value || '';
   }
 }

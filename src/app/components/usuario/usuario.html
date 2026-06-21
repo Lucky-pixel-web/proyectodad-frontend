@@ -1,0 +1,83 @@
+<app-header></app-header>
+<div class="page-shell">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Usuarios</h1>
+      <p class="page-subtitle">Sistema interno — solo el administrador crea cuentas de personal</p>
+    </div>
+    <button class="btn-primary-dark" (click)="abrirModal()">+ Crear Usuario</button>
+  </div>
+
+  <div class="stat-card blue animate-in" style="margin-bottom:1.5rem">
+    <div><div class="stat-label">Total de Usuarios del Sistema</div><div class="stat-value">{{ totalUsuarios }}</div></div>
+    <div class="stat-icon">👤</div>
+  </div>
+
+  <div class="alert-error animate-fade" *ngIf="backendError">{{ backendError }}</div>
+  <div class="alert-success animate-fade" *ngIf="mensaje">{{ mensaje }}</div>
+
+  <div class="toolbar-row">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Buscar por nombre o usuario..." [value]="busqueda" (input)="busqueda = $any($event.target).value" (keyup.enter)="filtrar()" />
+    </div>
+    <button type="button" class="btn-search" (click)="filtrar()">Buscar</button>
+  </div>
+
+  <div class="cards-grid" *ngIf="filtrados.length">
+    <div class="item-card" *ngFor="let u of filtrados; let i = index" [style.animation-delay.ms]="i * 60">
+      <div class="item-card-header">
+        <div class="d-flex align-items-center gap-2">
+          <div style="width:40px;height:40px;background:var(--purple-soft);border-radius:50%;display:flex;align-items:center;justify-content:center">👤</div>
+          <div>
+            <h3 class="item-card-title mb-0">{{ u.nombres }} {{ u.apellidos }}</h3>
+            <small class="text-muted">&#64;{{ u.username }}</small>
+          </div>
+        </div>
+        <span class="badge-status success" *ngIf="u.isCurrent">Tú</span>
+      </div>
+      <div class="item-card-body">
+        <div class="item-card-meta">
+          <span *ngIf="u.dni"><strong>DNI:</strong> {{ u.dni }}</span>
+          <span><strong>Condición:</strong> {{ formatRol(u.rol) }}</span>
+          <span><strong>Creado:</strong> {{ u.createdAt | date:'dd/MM/yyyy' }}</span>
+        </div>
+        <span class="badge-status" [ngClass]="u.rol === 'ADMIN' ? 'purple' : 'info'">{{ formatRol(u.rol) }}</span>
+      </div>
+      <div class="life-bar-wrap ok" *ngIf="u.isCurrent">Usuario actual (sesión activa)</div>
+    </div>
+  </div>
+  <div class="empty-search animate-in" *ngIf="sinResultadosBusqueda">
+    <div class="empty-search-icon">🔍</div>
+    <h3>No se encontraron resultados</h3>
+    <p>No hay usuarios que coincidan con «{{ busqueda }}»</p>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Crear Usuario</h3>
+      <button type="button" class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="modal-body">
+        <p class="modal-intro">Nombre + apellido → username automático (nombre.apellido)</p>
+        <div class="alert-error" *ngIf="error">{{ error }}</div>
+        <div class="modal-form-section">
+        <div class="form-grid">
+          <div class="form-group"><label>Nombres <span class="req">*</span></label><input class="form-control-custom" formControlName="nombres" /></div>
+          <div class="form-group"><label>Apellidos <span class="req">*</span></label><input class="form-control-custom" formControlName="apellidos" /></div>
+          <div class="form-group full"><label>Username (automático)</label><div class="username-preview">{{ usernamePreview || 'nombre.apellido' }}</div></div>
+          <div class="form-group"><label>DNI <span class="req">*</span></label><input class="form-control-custom" formControlName="dni" maxlength="8" /></div>
+          <div class="form-group"><label>Contraseña <span class="req">*</span></label><input type="password" class="form-control-custom" formControlName="password" /></div>
+        </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-primary-dark" [disabled]="form.invalid">Crear Usuario</button>
+      </div>
+    </form>
+  </div>
+</div>

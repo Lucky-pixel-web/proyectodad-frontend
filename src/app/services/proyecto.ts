@@ -2,13 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Proyecto } from '../models/proyecto';
+import { API } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProyectoService {
-  
-  private apiUrl = 'http://localhost:8089/api/proyectos'; 
+  private apiUrl = API.proyectos;
   private http = inject(HttpClient);
 
   listar(): Observable<Proyecto[]> {
