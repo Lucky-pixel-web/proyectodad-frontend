@@ -13,7 +13,7 @@
   font-family: 'DM Sans', system-ui, sans-serif;
 }
 
-/* ── Reactive liquid orb (signature element) ── */
+/* ── Reactive liquid orb ── */
 .login-orb {
   position: absolute;
   width: 600px;
@@ -22,8 +22,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
-  /* Solid color so background-color transition works smoothly */
-  background-color: #1a5fd0;
+  background-color: #4a8c10;
   filter: blur(52px);
   opacity: 0.41;
   pointer-events: none;
@@ -34,7 +33,7 @@
 }
 
 .login-page.login-user .login-orb {
-  background-color: #12a88e;
+  background-color: #6fa32e;
 }
 
 .login-page.has-input .login-orb {
@@ -77,8 +76,8 @@
   transition: color 1s ease, opacity 0.7s ease;
 }
 
-.login-page.login-admin .login-float-icon { color: #6da8ff; }
-.login-page.login-user  .login-float-icon { color: #5ecfbe; }
+.login-page.login-admin .login-float-icon { color: #b8df7f; }
+.login-page.login-user  .login-float-icon { color: #8DC63F; }
 .login-page.has-input   .login-float-icon { opacity: 0.2;  }
 
 .login-float-1 { top: 7%;    left: 6%;   font-size: 4rem;   animation: lf1 10s cubic-bezier(0.37,0,0.63,1) infinite alternate; }
@@ -114,30 +113,23 @@
 }
 
 /* ── Icon entrance animations on mode switch ── */
-/*
-  'scale' is a CSS individual transform property (Level 2 spec).
-  The float keyframes use 'transform: translate rotate' — no overlap, so both compose freely.
-  When Angular toggles .login-admin/.login-user the animation-name changes, restarting the entrance.
-*/
 @keyframes icon-enter-admin {
-  0%   { opacity: 0;    scale: 0.5;  filter: drop-shadow(0 0 32px rgba(79, 142, 247, 1))    brightness(2.5); }
-  55%  { opacity: 0.32; scale: 1.12; filter: drop-shadow(0 0 16px rgba(79, 142, 247, 0.55)) brightness(1.3); }
+  0%   { opacity: 0;    scale: 0.5;  filter: drop-shadow(0 0 32px rgba(141, 198, 63, 1))    brightness(2.5); }
+  55%  { opacity: 0.32; scale: 1.12; filter: drop-shadow(0 0 16px rgba(141, 198, 63, 0.55)) brightness(1.3); }
   100% { opacity: 0.2;  scale: 1;    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35))    brightness(1);   }
 }
 @keyframes icon-enter-user {
-  0%   { opacity: 0;    scale: 0.5;  filter: drop-shadow(0 0 32px rgba(18, 168, 142, 1))    brightness(2.5); }
-  55%  { opacity: 0.32; scale: 1.12; filter: drop-shadow(0 0 16px rgba(18, 168, 142, 0.55)) brightness(1.3); }
+  0%   { opacity: 0;    scale: 0.5;  filter: drop-shadow(0 0 32px rgba(111, 163, 46, 1))    brightness(2.5); }
+  55%  { opacity: 0.32; scale: 1.12; filter: drop-shadow(0 0 16px rgba(111, 163, 46, 0.55)) brightness(1.3); }
   100% { opacity: 0.2;  scale: 1;    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35))    brightness(1);   }
 }
 
-/* Admin mode: entrance + float. Slight stagger so icons pop in sequentially. */
 .login-page.login-admin .login-float-1 { animation: icon-enter-admin 0.55s ease-out forwards, lf1 10s cubic-bezier(0.37,0,0.63,1) 0.55s infinite alternate; }
 .login-page.login-admin .login-float-2 { animation: icon-enter-admin 0.55s ease-out 0.07s forwards, lf2 13s cubic-bezier(0.37,0,0.63,1) 0.62s infinite alternate; }
 .login-page.login-admin .login-float-3 { animation: icon-enter-admin 0.55s ease-out 0.13s forwards, lf3  9s cubic-bezier(0.37,0,0.63,1) 0.68s infinite alternate; }
 .login-page.login-admin .login-float-4 { animation: icon-enter-admin 0.55s ease-out 0.05s forwards, lf4 12s cubic-bezier(0.37,0,0.63,1) 0.60s infinite alternate; }
 .login-page.login-admin .login-float-5 { animation: icon-enter-admin 0.55s ease-out 0.10s forwards, lf5 11s cubic-bezier(0.37,0,0.63,1) 0.65s infinite alternate; }
 
-/* User mode: same structure, teal glow. */
 .login-page.login-user .login-float-1 { animation: icon-enter-user 0.55s ease-out forwards, lf1 10s cubic-bezier(0.37,0,0.63,1) 0.55s infinite alternate; }
 .login-page.login-user .login-float-2 { animation: icon-enter-user 0.55s ease-out 0.07s forwards, lf2 13s cubic-bezier(0.37,0,0.63,1) 0.62s infinite alternate; }
 .login-page.login-user .login-float-3 { animation: icon-enter-user 0.55s ease-out 0.13s forwards, lf3  9s cubic-bezier(0.37,0,0.63,1) 0.68s infinite alternate; }
@@ -189,7 +181,7 @@
 
 .lock-segment {
   background: rgba(10, 20, 45, 0.85);
-  border: 1px solid rgba(79, 142, 247, 0.2);
+  border: 1px solid rgba(141, 198, 63, 0.2);
   border-radius: 9px;
   padding: 0.45rem 0.9rem;
   min-width: 64px;
@@ -233,14 +225,14 @@
 .login-logo {
   width: 56px;
   height: 56px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(141, 198, 63, 0.12);
+  border: 1px solid rgba(141, 198, 63, 0.22);
   border-radius: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 1.55rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(141, 198, 63, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .login-brand h4 {
@@ -287,9 +279,9 @@
 }
 
 .alert-box--success {
-  background: rgba(34, 197, 94, 0.09);
-  border: 1px solid rgba(74, 222, 128, 0.22);
-  color: #86efac;
+  background: rgba(141, 198, 63, 0.09);
+  border: 1px solid rgba(141, 198, 63, 0.22);
+  color: #c5e27a;
 }
 
 @keyframes alert-shake {
@@ -342,12 +334,13 @@
 
 .form-control-login:focus {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.14);
+  border-color: rgba(141, 198, 63, 0.45);
+  box-shadow: 0 0 0 3px rgba(141, 198, 63, 0.14);
 }
 
 .login-page.login-user .form-control-login:focus {
-  box-shadow: 0 0 0 3px rgba(66, 169, 154, 0.14);
+  border-color: rgba(111, 163, 46, 0.45);
+  box-shadow: 0 0 0 3px rgba(111, 163, 46, 0.14);
 }
 
 .form-control-login:disabled {
@@ -364,12 +357,12 @@
   font-family: 'DM Sans', sans-serif;
   font-size: 0.74rem;
   font-weight: 500;
-  color: #4f8ef7;
+  color: #8DC63F;
   animation: fadeIn 0.3s ease both;
   transition: color 0.7s ease;
 }
 
-.login-page.login-user .role-indicator { color: #42a99a; }
+.login-page.login-user .role-indicator { color: #6fa32e; }
 
 .role-dot {
   width: 5px;
@@ -389,7 +382,7 @@
 .btn-login-submit {
   width: 100%;
   padding: 0.88rem 1rem;
-  background: #4f8ef7;
+  background: #8DC63F;
   border: none;
   border-radius: 11px;
   color: #fff;
@@ -403,7 +396,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 22px rgba(79, 142, 247, 0.38);
+  box-shadow: 0 4px 22px rgba(141, 198, 63, 0.38);
   transition:
     background 0.7s ease,
     box-shadow 0.7s ease,
@@ -412,8 +405,8 @@
 }
 
 .login-page.login-user .btn-login-submit {
-  background: #42a99a;
-  box-shadow: 0 4px 22px rgba(66, 169, 154, 0.38);
+  background: #6fa32e;
+  box-shadow: 0 4px 22px rgba(111, 163, 46, 0.38);
 }
 
 .btn-login-submit:hover:not(:disabled) {

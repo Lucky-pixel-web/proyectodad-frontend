@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --navy: #1e1b4b;
-  --navy-light: #2b247a;
-  --purple: #818cf8;
-  --purple-soft: rgba(129, 140, 248, 0.12);
+  --navy: #252525;
+  --navy-light: #3D3D3D;
+  --purple: #8DC63F;
+  --purple-soft: rgba(141, 198, 63, 0.12);
   --bg: #070b15;
   --surface: rgba(255, 255, 255, 0.05);
   --text: #e8edf5;
@@ -88,6 +88,7 @@ body {
   background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%) !important;
   padding: 0.65rem 1.5rem !important;
   box-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+  border-bottom: 1px solid rgba(141, 198, 63, 0.18);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -116,7 +117,7 @@ body {
 
 .topbar .nav-link.active {
   color: #fff !important;
-  background: rgba(129, 140, 248, 0.35) !important;
+  background: rgba(141, 198, 63, 0.22) !important;
 }
 
 .topbar .btn-logout {
@@ -156,7 +157,7 @@ body {
 
 /* ── Buttons ── */
 .btn-primary-dark {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #8DC63F, #6fa32e);
   color: #fff;
   border: none; border-radius: 10px;
   padding: 0.6rem 1.25rem;
@@ -164,13 +165,13 @@ body {
   display: inline-flex; align-items: center; gap: 0.4rem;
   cursor: pointer;
   transition: all var(--transition);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 16px rgba(141, 198, 63, 0.3);
 }
 
 .btn-primary-dark:hover:not(:disabled) {
-  background: linear-gradient(135deg, #818cf8, #6366f1);
+  background: linear-gradient(135deg, #9ed44a, #7ab82a);
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 6px 24px rgba(141, 198, 63, 0.45);
 }
 
 .btn-primary-dark:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -249,9 +250,9 @@ body {
 .filter-pill:hover { border-color: rgba(255, 255, 255, 0.18); color: var(--text); }
 
 .filter-pill.active {
-  background: rgba(99, 102, 241, 0.2);
-  color: #c7d2fe;
-  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(141, 198, 63, 0.18);
+  color: #d4edaa;
+  border-color: rgba(141, 198, 63, 0.38);
 }
 
 /* ── Stat cards ── */
@@ -602,8 +603,8 @@ textarea.form-control-custom { min-height: 110px; resize: vertical; padding-top:
 .login-float-4 { bottom: 12%; right: 12%; animation-delay: -9s;  font-size: 4.8rem; }
 .login-float-5 { bottom: 22%; left: 28%; animation-delay: -12s; font-size: 3.5rem; }
 
-.login-admin .login-float-icon { color: #a5b4fc; }
-.login-user  .login-float-icon { color: #86efac; }
+.login-admin .login-float-icon { color: #b8df7f; }
+.login-user  .login-float-icon { color: #8DC63F; }
 
 .login-card-dark {
   position: relative; z-index: 2;
@@ -617,7 +618,7 @@ textarea.form-control-custom { min-height: 110px; resize: vertical; padding-top:
 }
 
 .login-welcome {
-  background: linear-gradient(90deg, #6366f1, #818cf8);
+  background: linear-gradient(90deg, #6fa32e, #8DC63F);
   color: #fff; text-align: center;
   padding: 0.85rem 1rem;
   font-weight: 600; font-size: 0.95rem;
@@ -628,7 +629,7 @@ textarea.form-control-custom { min-height: 110px; resize: vertical; padding-top:
 
 .lockout-banner {
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-bottom: 2px solid #6366f1;
+  border-bottom: 2px solid #8DC63F;
   padding: 1rem 1.25rem 1.1rem;
   text-align: center; border-radius: 22px 22px 0 0;
 }
@@ -670,7 +671,7 @@ textarea.form-control-custom { min-height: 110px; resize: vertical; padding-top:
 
 .login-logo {
   width: 52px; height: 52px;
-  background: linear-gradient(135deg, #6366f1, #312e81);
+  background: linear-gradient(135deg, #6fa32e, #3a5c1a);
   border-radius: 14px;
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 1.4rem;
@@ -691,8 +692,8 @@ textarea.form-control-custom { min-height: 110px; resize: vertical; padding-top:
 .login-tabs-dark .login-tab:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
 .login-tabs-dark .login-tab.active {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: #fff; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, #6fa32e, #8DC63F);
+  color: #fff; box-shadow: 0 4px 14px rgba(141, 198, 63, 0.35);
 }
 
 .login-locked .login-card { pointer-events: auto; }
@@ -760,38 +761,38 @@ textarea.form-control-custom { min-height: 110px; resize: vertical; padding-top:
 .orb-2 { width: 550px; height: 550px; top: 35%; right: -14%; animation-delay: -8s; }
 .orb-3 { width: 480px; height: 480px; bottom: -15%; left: 30%; animation-delay: -16s; }
 
-/* Per-route orb colours */
-.bg-route-home .orb-1        { background: radial-gradient(circle at 40% 40%, rgba(99,102,241,0.55) 0%, transparent 68%); }
-.bg-route-home .orb-2        { background: radial-gradient(circle at 40% 40%, rgba(139,92,246,0.38) 0%, transparent 68%); }
-.bg-route-home .orb-3        { background: radial-gradient(circle at 40% 40%, rgba(59,130,246,0.28) 0%, transparent 68%); }
+/* Per-route orb colours — brand green dominant, warm complements per module */
+.bg-route-home .orb-1        { background: radial-gradient(circle at 40% 40%, rgba(141,198,63,0.55) 0%, transparent 68%); }
+.bg-route-home .orb-2        { background: radial-gradient(circle at 40% 40%, rgba(100,150,20,0.35) 0%, transparent 68%); }
+.bg-route-home .orb-3        { background: radial-gradient(circle at 40% 40%, rgba(180,215,80,0.22) 0%, transparent 68%); }
 
-.bg-route-herramientas .orb-1 { background: radial-gradient(circle at 40% 40%, rgba(59,130,246,0.55) 0%, transparent 68%); }
-.bg-route-herramientas .orb-2 { background: radial-gradient(circle at 40% 40%, rgba(6,182,212,0.38) 0%, transparent 68%); }
-.bg-route-herramientas .orb-3 { background: radial-gradient(circle at 40% 40%, rgba(99,102,241,0.26) 0%, transparent 68%); }
+.bg-route-herramientas .orb-1 { background: radial-gradient(circle at 40% 40%, rgba(141,198,63,0.55) 0%, transparent 68%); }
+.bg-route-herramientas .orb-2 { background: radial-gradient(circle at 40% 40%, rgba(200,160,40,0.35) 0%, transparent 68%); }
+.bg-route-herramientas .orb-3 { background: radial-gradient(circle at 40% 40%, rgba(100,150,20,0.22) 0%, transparent 68%); }
 
-.bg-route-accesorios .orb-1  { background: radial-gradient(circle at 40% 40%, rgba(34,197,94,0.50) 0%, transparent 68%); }
-.bg-route-accesorios .orb-2  { background: radial-gradient(circle at 40% 40%, rgba(16,185,129,0.35) 0%, transparent 68%); }
-.bg-route-accesorios .orb-3  { background: radial-gradient(circle at 40% 40%, rgba(59,130,246,0.22) 0%, transparent 68%); }
+.bg-route-accesorios .orb-1  { background: radial-gradient(circle at 40% 40%, rgba(141,198,63,0.52) 0%, transparent 68%); }
+.bg-route-accesorios .orb-2  { background: radial-gradient(circle at 40% 40%, rgba(20,180,140,0.30) 0%, transparent 68%); }
+.bg-route-accesorios .orb-3  { background: radial-gradient(circle at 40% 40%, rgba(100,150,20,0.22) 0%, transparent 68%); }
 
-.bg-route-melamine .orb-1    { background: radial-gradient(circle at 40% 40%, rgba(245,158,11,0.55) 0%, transparent 68%); }
-.bg-route-melamine .orb-2    { background: radial-gradient(circle at 40% 40%, rgba(217,119,6,0.38) 0%, transparent 68%); }
-.bg-route-melamine .orb-3    { background: radial-gradient(circle at 40% 40%, rgba(239,68,68,0.22) 0%, transparent 68%); }
+.bg-route-melamine .orb-1    { background: radial-gradient(circle at 40% 40%, rgba(141,198,63,0.55) 0%, transparent 68%); }
+.bg-route-melamine .orb-2    { background: radial-gradient(circle at 40% 40%, rgba(210,130,30,0.38) 0%, transparent 68%); }
+.bg-route-melamine .orb-3    { background: radial-gradient(circle at 40% 40%, rgba(100,150,20,0.22) 0%, transparent 68%); }
 
-.bg-route-proveedores .orb-1 { background: radial-gradient(circle at 40% 40%, rgba(139,92,246,0.55) 0%, transparent 68%); }
-.bg-route-proveedores .orb-2 { background: radial-gradient(circle at 40% 40%, rgba(99,102,241,0.38) 0%, transparent 68%); }
-.bg-route-proveedores .orb-3 { background: radial-gradient(circle at 40% 40%, rgba(124,58,237,0.26) 0%, transparent 68%); }
+.bg-route-proveedores .orb-1 { background: radial-gradient(circle at 40% 40%, rgba(141,198,63,0.52) 0%, transparent 68%); }
+.bg-route-proveedores .orb-2 { background: radial-gradient(circle at 40% 40%, rgba(80,140,20,0.35) 0%, transparent 68%); }
+.bg-route-proveedores .orb-3 { background: radial-gradient(circle at 40% 40%, rgba(160,200,60,0.22) 0%, transparent 68%); }
 
-.bg-route-proyectos .orb-1   { background: radial-gradient(circle at 40% 40%, rgba(234,179,8,0.55) 0%, transparent 68%); }
-.bg-route-proyectos .orb-2   { background: radial-gradient(circle at 40% 40%, rgba(245,158,11,0.38) 0%, transparent 68%); }
-.bg-route-proyectos .orb-3   { background: radial-gradient(circle at 40% 40%, rgba(34,197,94,0.22) 0%, transparent 68%); }
+.bg-route-proyectos .orb-1   { background: radial-gradient(circle at 40% 40%, rgba(141,198,63,0.55) 0%, transparent 68%); }
+.bg-route-proyectos .orb-2   { background: radial-gradient(circle at 40% 40%, rgba(200,180,20,0.38) 0%, transparent 68%); }
+.bg-route-proyectos .orb-3   { background: radial-gradient(circle at 40% 40%, rgba(100,150,20,0.24) 0%, transparent 68%); }
 
-.bg-route-usuarios .orb-1    { background: radial-gradient(circle at 40% 40%, rgba(99,102,241,0.52) 0%, transparent 68%); }
-.bg-route-usuarios .orb-2    { background: radial-gradient(circle at 40% 40%, rgba(59,130,246,0.36) 0%, transparent 68%); }
-.bg-route-usuarios .orb-3    { background: radial-gradient(circle at 40% 40%, rgba(139,92,246,0.24) 0%, transparent 68%); }
+.bg-route-usuarios .orb-1    { background: radial-gradient(circle at 40% 40%, rgba(141,198,63,0.52) 0%, transparent 68%); }
+.bg-route-usuarios .orb-2    { background: radial-gradient(circle at 40% 40%, rgba(60,160,120,0.30) 0%, transparent 68%); }
+.bg-route-usuarios .orb-3    { background: radial-gradient(circle at 40% 40%, rgba(100,150,20,0.22) 0%, transparent 68%); }
 
-.bg-route-clientes .orb-1    { background: radial-gradient(circle at 40% 40%, rgba(20,184,166,0.52) 0%, transparent 68%); }
-.bg-route-clientes .orb-2    { background: radial-gradient(circle at 40% 40%, rgba(6,182,212,0.36) 0%, transparent 68%); }
-.bg-route-clientes .orb-3    { background: radial-gradient(circle at 40% 40%, rgba(59,130,246,0.24) 0%, transparent 68%); }
+.bg-route-clientes .orb-1    { background: radial-gradient(circle at 40% 40%, rgba(141,198,63,0.52) 0%, transparent 68%); }
+.bg-route-clientes .orb-2    { background: radial-gradient(circle at 40% 40%, rgba(80,200,160,0.28) 0%, transparent 68%); }
+.bg-route-clientes .orb-3    { background: radial-gradient(circle at 40% 40%, rgba(100,150,20,0.22) 0%, transparent 68%); }
 
 /* Floating icon glyphs */
 .bg-float {
@@ -807,14 +808,14 @@ textarea.form-control-custom { min-height: 110px; resize: vertical; padding-top:
 .bg-float-4 { bottom: 15%; right: 6%;  font-size: 5rem;   animation-delay: -9s;  }
 .bg-float-5 { bottom: 8%;  left: 35%; font-size: 3.8rem; animation-delay: -12s; }
 
-.bg-route-home         .bg-float { color: rgba(129, 140, 248, 0.9); }
-.bg-route-herramientas .bg-float { color: rgba(96,  165, 250, 0.9); }
-.bg-route-accesorios   .bg-float { color: rgba(74,  222, 128, 0.9); }
-.bg-route-melamine     .bg-float { color: rgba(251, 191,  36, 0.9); }
-.bg-route-proveedores  .bg-float { color: rgba(167, 139, 250, 0.9); }
-.bg-route-proyectos    .bg-float { color: rgba(250, 204,  21, 0.9); }
-.bg-route-usuarios     .bg-float { color: rgba(129, 140, 248, 0.9); }
-.bg-route-clientes     .bg-float { color: rgba(45,  212, 191, 0.9); }
+.bg-route-home         .bg-float { color: rgba(141, 198, 63, 0.9); }
+.bg-route-herramientas .bg-float { color: rgba(141, 198, 63, 0.9); }
+.bg-route-accesorios   .bg-float { color: rgba(141, 198, 63, 0.9); }
+.bg-route-melamine     .bg-float { color: rgba(141, 198, 63, 0.9); }
+.bg-route-proveedores  .bg-float { color: rgba(141, 198, 63, 0.9); }
+.bg-route-proyectos    .bg-float { color: rgba(141, 198, 63, 0.9); }
+.bg-route-usuarios     .bg-float { color: rgba(141, 198, 63, 0.9); }
+.bg-route-clientes     .bg-float { color: rgba(141, 198, 63, 0.9); }
 
 .page-shell { position: relative; z-index: 1; }
 
@@ -952,16 +953,16 @@ select.form-control-custom option { color: #0f172a; background: #1e293b; }
 
 .btn-search {
   padding: 0.65rem 1.25rem;
-  background: rgba(99, 102, 241, 0.22);
-  color: #c7d2fe;
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: rgba(141, 198, 63, 0.18);
+  color: #d4edaa;
+  border: 1px solid rgba(141, 198, 63, 0.32);
   border-radius: 10px; font-weight: 600; font-size: 0.85rem;
   cursor: pointer; white-space: nowrap; transition: all var(--transition);
 }
 
 .btn-search:hover {
-  background: rgba(99, 102, 241, 0.38);
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.22);
+  background: rgba(141, 198, 63, 0.30);
+  box-shadow: 0 0 16px rgba(141, 198, 63, 0.22);
 }
 
 /* ── Alerts ── */
