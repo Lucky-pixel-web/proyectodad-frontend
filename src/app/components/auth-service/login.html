@@ -1,9 +1,21 @@
-<div class="login-page" [class.login-admin]="modo === 'admin'" [class.login-user]="modo === 'user'" [class.login-locked]="isLocked">
-  <div class="login-bg-layer">
-    <span class="login-float-icon" *ngFor="let icon of floatIcons; let i = index" [ngClass]="'login-float-' + (i + 1)">{{ icon }}</span>
+<div class="login-page"
+  [class.login-admin]="modo === 'admin'"
+  [class.login-user]="modo === 'user'"
+  [class.login-locked]="isLocked"
+  [class.has-input]="loginForm.get('username')?.value?.length > 0">
+
+  <div class="login-orb" aria-hidden="true"></div>
+
+  <div class="login-bg-layer" aria-hidden="true">
+    <span
+      class="login-float-icon"
+      *ngFor="let icon of floatIcons; let i = index"
+      [ngClass]="'login-float-' + (i + 1)"
+    >{{ icon }}</span>
   </div>
 
-  <div class="login-card login-card-dark animate-in">
+  <div class="login-card animate-in">
+
     <div class="lockout-banner" *ngIf="isLocked">
       <div class="lockout-title">Bloqueo — cuenta regresiva</div>
       <div class="lockout-clock">
@@ -19,49 +31,63 @@
       </div>
     </div>
 
-    <div class="login-welcome">Bienvenido al apartado de Login</div>
-
     <div class="login-brand">
       <div class="login-logo">🔨</div>
       <h4>Sistema de Inventario</h4>
       <p>Empresa Java — Acceso interno</p>
     </div>
 
-    <div class="login-tabs login-tabs-dark">
-      <button type="button" class="login-tab" [class.active]="modo === 'admin'" [disabled]="isLocked" (click)="setModo('admin')">Administrador</button>
-      <button type="button" class="login-tab" [class.active]="modo === 'user'" [disabled]="isLocked" (click)="setModo('user')">Almacenero</button>
-    </div>
-
-    <div class="alert-error alert-animated lockout-detail" *ngIf="isLocked && lockoutDetailMessage" role="alert">
+    <div class="alert-box alert-box--error" *ngIf="isLocked && lockoutDetailMessage" role="alert">
       <span class="alert-icon">🔒</span>
       <span>{{ lockoutDetailMessage }}</span>
     </div>
 
-    <div class="alert-error alert-animated" *ngIf="errorMessage && !isLocked" role="alert">
+    <div class="alert-box alert-box--error" *ngIf="errorMessage && !isLocked" role="alert">
       <span class="alert-icon">⚠</span>
       <span>{{ errorMessage }}</span>
     </div>
 
-    <div class="alert-success alert-animated" *ngIf="successMessage && !isLocked" role="status">
+    <div class="alert-box alert-box--success" *ngIf="successMessage && !isLocked" role="status">
       <span class="alert-icon">✓</span>
       <span>{{ successMessage }}</span>
     </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="login-form-dark">
+    <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="login-form">
       <div class="form-group">
-        <label>Usuario</label>
-        <input type="text" class="form-control-custom form-dark" formControlName="username" placeholder="Ingrese su usuario" />
+        <label for="login-username">Usuario</label>
+        <input
+          id="login-username"
+          type="text"
+          class="form-control-login"
+          formControlName="username"
+          placeholder="Ingrese su usuario"
+          autocomplete="username"
+          (input)="onUsernameInput($any($event.target).value)"
+        />
+        <div class="role-indicator" *ngIf="loginForm.get('username')?.value">
+          <span class="role-dot"></span>
+          {{ modo === 'admin' ? 'Acceso Administrador detectado' : 'Acceso Almacenero detectado' }}
+        </div>
       </div>
+
       <div class="form-group">
-        <label>Contraseña</label>
-        <input type="password" class="form-control-custom form-dark" formControlName="password" placeholder="Ingrese su contraseña" />
+        <label for="login-password">Contraseña</label>
+        <input
+          id="login-password"
+          type="password"
+          class="form-control-login"
+          formControlName="password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+        />
       </div>
-      <button type="submit" class="btn-login-submit w-100" [disabled]="cargando || isLocked">
+
+      <button type="submit" class="btn-login-submit" [disabled]="cargando || isLocked">
         <span *ngIf="cargando" class="spinner-border spinner-border-sm"></span>
-        {{ isLocked ? 'Cuenta bloqueada — espere' : (cargando ? 'Autenticando...' : 'Iniciar Sesión') }}
+        {{ isLocked ? 'Cuenta bloqueada — espere' : (cargando ? 'Autenticando...' : 'Iniciar sesión') }}
       </button>
     </form>
 
-    <p class="login-note login-note-dark">Los usuarios los crea el administrador desde el módulo Usuarios.</p>
+    <p class="login-note">Los usuarios los crea el administrador desde el módulo Usuarios.</p>
   </div>
 </div>

@@ -24,6 +24,7 @@ const USER_ICONS = ['📦', '🏭', '🔧', '🚚', '📋'];
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './login.html',
+  styleUrl: './login.css',
 })
 export class LoginComponent implements OnInit, OnDestroy {
   loginForm!: FormGroup;
@@ -71,6 +72,14 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   get floatIcons(): string[] {
     return this.modo === 'admin' ? this.adminIcons : this.userIcons;
+  }
+
+  onUsernameInput(value: string): void {
+    const next: LoginRole = value.toLowerCase().startsWith('a') ? 'admin' : 'user';
+    if (next === this.modo) return;
+    this.modo = next;
+    this.errorMessage = '';
+    this.successMessage = '';
   }
 
   setModo(m: LoginRole): void {
