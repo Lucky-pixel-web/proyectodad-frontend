@@ -47,6 +47,18 @@ export class AccesorioComponent implements OnInit {
     this.listar();
   }
 
+  calcularVidaUtil(dias: number): string {
+    if (!dias || dias <= 0) return 'Sin datos';
+    const anios = Math.floor(dias / 365);
+    const meses = Math.floor((dias % 365) / 30);
+    const d = dias % 30;
+    const parts: string[] = [];
+    if (anios) parts.push(`${anios} año${anios !== 1 ? 's' : ''}`);
+    if (meses) parts.push(`${meses} mes${meses !== 1 ? 'es' : ''}`);
+    if (d || parts.length === 0) parts.push(`${d} día${d !== 1 ? 's' : ''}`);
+    return parts.join(', ');
+  }
+
   get totalAccesorios() { return this.accesorios.length; }
   get sinStock() { return this.accesorios.filter((a) => (a.stock ?? 0) === 0).length; }
   get sinResultadosBusqueda(): boolean {

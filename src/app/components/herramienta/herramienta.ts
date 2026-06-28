@@ -152,6 +152,18 @@ export class HerramientaComponent implements OnInit {
 
 
 
+  calcularVidaUtil(dias: number): string {
+    if (!dias || dias <= 0) return 'Sin datos';
+    const anios = Math.floor(dias / 365);
+    const meses = Math.floor((dias % 365) / 30);
+    const d = dias % 30;
+    const parts: string[] = [];
+    if (anios) parts.push(`${anios} año${anios !== 1 ? 's' : ''}`);
+    if (meses) parts.push(`${meses} mes${meses !== 1 ? 'es' : ''}`);
+    if (d || parts.length === 0) parts.push(`${d} día${d !== 1 ? 's' : ''}`);
+    return parts.join(', ');
+  }
+
   getVidaInfo(h: Herramienta): { text: string; ok: boolean } {
 
     if (!h.compra || !h.vidaUtil) return { text: 'Sin datos de vida útil', ok: true };

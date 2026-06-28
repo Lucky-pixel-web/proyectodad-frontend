@@ -42,6 +42,12 @@ const ROUTE_ICONS: Record<string, string[]> = {
 
     <div class="animated-bg" [class]="'bg-route-' + routeKey" aria-hidden="true">
 
+      <div class="orb orb-1"></div>
+
+      <div class="orb orb-2"></div>
+
+      <div class="orb orb-3"></div>
+
       <span
 
         class="bg-float"

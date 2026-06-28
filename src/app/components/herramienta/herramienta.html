@@ -35,7 +35,7 @@
           <span><strong>Tipo:</strong> {{ h.tipo }}</span>
           <span><strong>Marca:</strong> {{ h.marca }}</span>
           <span><strong>Compra:</strong> {{ h.compra | date:'dd/MM/yyyy' }}</span>
-          <span><strong>Vida útil:</strong> {{ h.vidaUtil }} meses</span>
+          <span><strong>Vida útil:</strong> {{ calcularVidaUtil(+(h.vidaUtil ?? '0')) }}</span>
         </div>
         <div class="life-bar-wrap" [class.ok]="getVidaInfo(h).ok" [class.expired]="!getVidaInfo(h).ok">
           {{ getVidaInfo(h).text }}
@@ -53,7 +53,11 @@
     <h3>No se encontraron resultados</h3>
     <p>No hay herramientas que coincidan con «{{ busqueda }}»</p>
   </div>
-  <div class="empty-state full" *ngIf="!buscando && !filtradas.length && !busquedaActiva" style="grid-column:1/-1">No hay herramientas registradas.</div>
+  <div class="empty-search animate-in" *ngIf="!buscando && !filtradas.length && !busquedaActiva">
+    <div class="empty-search-icon">🔧</div>
+    <h3>No hay herramientas registradas</h3>
+    <p>Use «+ Agregar Herramienta» para crear la primera.</p>
+  </div>
 </div>
 
 <div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
