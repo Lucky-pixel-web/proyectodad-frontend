@@ -1,8 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { Header } from '../header/header'; // Reutilizamos tu Header
+import { Header } from '../header/header';
 import { ClienteService } from '../../services/cliente';
 import { Cliente } from '../../models/cliente';
 
@@ -15,22 +14,25 @@ import { Cliente } from '../../models/cliente';
 })
 export class ClienteComponent implements OnInit {
 
-  // Listas de datos
   clientes: Cliente[] = [];
-  
-  // Control de Formularios y Modales
+  filtrados: Cliente[] = [];
+  busqueda = '';
+  busquedaActiva = false;
+
   form: FormGroup;
   showModal = false;
   isEditMode = false;
   clienteIdSeleccionado: number | null = null;
-
-  // Estados de carga y búsqueda
   buscando = false;
   mensajeError = '';
+  formError = '';
 
-  // Inyecciones modernas usando inject()
+  get totalClientes() { return this.clientes.length; }
+  get sinResultadosBusqueda(): boolean {
+    return this.busquedaActiva && !this.filtrados.length && this.clientes.length > 0;
+  }
+
   private fb = inject(FormBuilder);
-  private router = inject(Router);
   private clienteService = inject(ClienteService);
 
   constructor() {
@@ -57,6 +59,7 @@ export class ClienteComponent implements OnInit {
     this.clienteService.listar().subscribe({
       next: (data) => {
         this.clientes = data;
+        this.filtrar();
         this.buscando = false;
       },
       error: (err) => {
@@ -65,6 +68,16 @@ export class ClienteComponent implements OnInit {
         this.buscando = false;
       }
     });
+  }
+
+  filtrar(): void {
+    this.busquedaActiva = !!this.busqueda.trim();
+    const q = this.busqueda.toLowerCase();
+    this.filtrados = this.clientes.filter(
+      (c) => !q || c.nombre?.toLowerCase().includes(q) ||
+             c.apellido?.toLowerCase().includes(q) ||
+             c.dni?.includes(q)
+    );
   }
 
   // ============================================
@@ -142,6 +155,7 @@ export class ClienteComponent implements OnInit {
   abrirModalCrear(): void {
     this.isEditMode = false;
     this.clienteIdSeleccionado = null;
+    this.formError = '';
     this.form.reset();
     this.showModal = true;
   }
@@ -155,10 +169,8 @@ export class ClienteComponent implements OnInit {
 
   cerrarModal(): void {
     this.showModal = false;
+    this.formError = '';
     this.form.reset();
   }
 
-  onAtras(): void {
-    this.router.navigateByUrl('/');
-  }
 }

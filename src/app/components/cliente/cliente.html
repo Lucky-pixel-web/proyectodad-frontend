@@ -1,138 +1,112 @@
 <app-header></app-header>
 
-<div class="solicitud-layout">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="title-page mb-0">Gestión de Clientes</h1>
-    <button type="button" class="btn btn-danger" (click)="abrirModalCrear()">
-      <span class="add-icon">+</span> Nuevo Cliente
-    </button>
+<div class="page-shell">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Clientes</h1>
+      <p class="page-subtitle">Administre el registro de clientes del sistema</p>
+    </div>
+    <button class="btn-primary-dark" (click)="abrirModalCrear()">+ Nuevo Cliente</button>
   </div>
 
-  <section class="card-section">
-    <h5 class="section-title">Listado de Clientes Registrados</h5>
-    
-    <div class="table-responsive mt-3">
-      <table class="table table-hover align-middle">
-        <thead>
-          <tr>
-            <th>DNI</th>
-            <th>Nombre Completo</th>
-            <th>Correo Electrónico</th>
-            <th>Teléfono</th>
-            <th>Dirección</th>
-            <th class="text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let c of clientes">
-            <td>{{ c.dni }}</td>
-            <td class="fw-semibold">{{ c.nombre }} {{ c.apellido }}</td>
-            <td>{{ c.correo }}</td>
-            <td>{{ c.telefono || '---' }}</td>
-            <td>{{ c.direccion || '---' }}</td>
-            <td class="text-center">
-              <button class="btn btn-outline-primary btn-sm me-2" (click)="abrirModalEditar(c)">
-                Editar
-              </button>
-              <button class="btn btn-danger btn-sm" (click)="eliminar(c.id)">
-                Eliminar
-              </button>
-            </td>
-          </tr>
-
-          <tr *ngIf="buscando">
-            <td colspan="6" class="text-center text-muted py-4">
-              <div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
-              Conectando con el microservicio de clientes...
-            </td>
-          </tr>
-
-          <tr *ngIf="clientes.length === 0 && !buscando">
-            <td colspan="6" class="text-center text-muted py-4">
-              No se encontraron clientes registrados en el sistema.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+    <div class="stat-card blue">
+      <div><div class="stat-label">Total Clientes</div><div class="stat-value">{{ totalClientes }}</div></div>
+      <div class="stat-icon">👥</div>
     </div>
-  </section>
+  </div>
 
-  <div class="actions-row mt-4">
-    <button type="button" class="btn btn-outline-danger" (click)="onAtras()">⟵ Menú Principal</button>
+  <div class="toolbar-row">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Buscar por nombre, apellido o DNI..." [value]="busqueda" (input)="busqueda = $any($event.target).value" (keyup.enter)="filtrar()" />
+    </div>
+    <button type="button" class="btn-search" (click)="filtrar()">Buscar</button>
+  </div>
+
+  <div *ngIf="buscando" class="text-center py-4"><div class="spinner"></div></div>
+
+  <div class="cards-grid" *ngIf="!buscando && filtrados.length">
+    <div class="item-card" *ngFor="let c of filtrados; let i = index" [style.animation-delay.ms]="i * 60">
+      <div class="item-card-header">
+        <h3 class="item-card-title mb-0">{{ c.nombre }} {{ c.apellido }}</h3>
+        <span class="badge-status info">DNI {{ c.dni }}</span>
+      </div>
+      <div class="item-card-body">
+        <div class="item-card-meta">
+          <span><strong>Correo:</strong> {{ c.correo }}</span>
+          <span><strong>Teléfono:</strong> {{ c.telefono || '---' }}</span>
+          <span><strong>Dirección:</strong> {{ c.direccion || '---' }}</span>
+        </div>
+      </div>
+      <div class="item-card-footer">
+        <button class="btn-outline btn-icon" (click)="abrirModalEditar(c)">✏️ Editar</button>
+        <button class="btn-danger-soft btn-icon" (click)="eliminar(c.id)">🗑️ Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-search animate-in" *ngIf="!buscando && sinResultadosBusqueda">
+    <div class="empty-search-icon">🔍</div>
+    <h3>No se encontraron resultados</h3>
+    <p>No hay clientes que coincidan con «{{ busqueda }}»</p>
+  </div>
+
+  <div class="empty-search animate-in" *ngIf="!buscando && !filtrados.length && !busquedaActiva">
+    <div class="empty-search-icon">👥</div>
+    <h3>No hay clientes registrados</h3>
+    <p>Use «+ Nuevo Cliente» para agregar el primero.</p>
   </div>
 </div>
 
-<div class="modal-backdrop-gesflex" *ngIf="showModal">
-  <div class="modal-gesflex carga-modal">
-    <h3 class="modal-title-gesflex mb-3">
-      {{ isEditMode ? 'Modificar Datos de Cliente' : 'Registrar Nuevo Cliente' }}
-    </h3>
-
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ isEditMode ? 'Editar Cliente' : 'Registrar Nuevo Cliente' }}</h3>
+      <button type="button" class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
     <form [formGroup]="form" (ngSubmit)="guardar()">
-      <div class="row">
-        
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">DNI (8 dígitos)</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            formControlName="dni" 
-            maxlength="8"
-            (input)="buscarPorDni($event)"
-            placeholder="Ingrese DNI..." 
-          />
-          <div class="form-text text-danger" *ngIf="form.get('dni')?.touched && form.get('dni')?.errors?.['required']">
-            El número de DNI es obligatorio.
-          </div>
-          <div class="form-text text-danger" *ngIf="form.get('dni')?.errors?.['pattern']">
-            El DNI debe contener exactamente 8 números.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Correo Electrónico</label>
-          <input type="email" class="form-control" formControlName="correo" placeholder="ejemplo@correo.com" />
-          <div class="form-text text-danger" *ngIf="form.get('correo')?.touched && form.get('correo')?.errors">
-            Ingrese un correo electrónico válido.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Nombres</label>
-          <input type="text" class="form-control" formControlName="nombre" placeholder="Nombres del cliente..." />
-          <div class="form-text text-danger" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.errors">
-            El nombre es requerido (mínimo 2 letras).
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Apellidos</label>
-          <input type="text" class="form-control" formControlName="apellido" placeholder="Apellidos del cliente..." />
-          <div class="form-text text-danger" *ngIf="form.get('apellido')?.touched && form.get('apellido')?.errors">
-            El apellido es requerido (mínimo 2 letras).
+      <div class="modal-body">
+        <p class="modal-intro">Complete los datos del cliente</p>
+        <div class="alert-error" *ngIf="formError">{{ formError }}</div>
+        <div class="modal-form-section">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>DNI <span class="req">*</span></label>
+              <input class="form-control-custom" formControlName="dni" maxlength="8" placeholder="12345678" (input)="buscarPorDni($event)" />
+              <p class="form-error" *ngIf="form.get('dni')?.touched && form.get('dni')?.errors?.['required']">El DNI es obligatorio.</p>
+              <p class="form-error" *ngIf="form.get('dni')?.errors?.['pattern']">Debe tener exactamente 8 dígitos.</p>
+            </div>
+            <div class="form-group">
+              <label>Correo <span class="req">*</span></label>
+              <input type="email" class="form-control-custom" formControlName="correo" placeholder="correo@ejemplo.com" />
+              <p class="form-error" *ngIf="form.get('correo')?.touched && form.get('correo')?.errors">Ingrese un correo válido.</p>
+            </div>
+            <div class="form-group">
+              <label>Nombres <span class="req">*</span></label>
+              <input class="form-control-custom" formControlName="nombre" placeholder="Nombres del cliente" />
+              <p class="form-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.errors">Requerido (mínimo 2 letras).</p>
+            </div>
+            <div class="form-group">
+              <label>Apellidos <span class="req">*</span></label>
+              <input class="form-control-custom" formControlName="apellido" placeholder="Apellidos del cliente" />
+              <p class="form-error" *ngIf="form.get('apellido')?.touched && form.get('apellido')?.errors">Requerido (mínimo 2 letras).</p>
+            </div>
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input class="form-control-custom" formControlName="telefono" maxlength="9" placeholder="9xxxxxxxx" />
+              <p class="form-error" *ngIf="form.get('telefono')?.errors?.['pattern']">Debe iniciar con 9 y tener 9 dígitos.</p>
+            </div>
+            <div class="form-group">
+              <label>Dirección</label>
+              <input class="form-control-custom" formControlName="direccion" placeholder="Av. Las Flores 123..." />
+            </div>
           </div>
         </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Teléfono / Celular</label>
-          <input type="text" class="form-control" formControlName="telefono" maxlength="9" placeholder="9xxxxxxxx" />
-          <div class="form-text text-danger" *ngIf="form.get('telefono')?.errors?.['pattern']">
-            El celular debe iniciar con 9 y tener 9 dígitos.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Dirección Residencial</label>
-          <input type="text" class="form-control" formControlName="direccion" placeholder="Av. Las Flores 123..." />
-        </div>
-
       </div>
-
-      <div class="actions-row mt-3">
-        <button type="button" class="btn btn-outline-danger" (click)="cerrarModal()">⟵ Cancelar</button>
-        <button type="submit" class="btn btn-danger" [disabled]="form.invalid">
-          {{ isEditMode ? 'Actualizar' : 'Guardar Cliente' }}
-        </button>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-primary-dark">{{ isEditMode ? 'Guardar Cambios' : 'Registrar Cliente' }}</button>
       </div>
     </form>
   </div>
