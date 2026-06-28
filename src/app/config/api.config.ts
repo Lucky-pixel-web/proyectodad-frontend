@@ -1,7 +1,3 @@
-/**
- * Puertos según application.yml del backend (proyectodad-backend).
- * ms-proveedores suele levantar en 8092 cuando config-server ya ocupa 8088.
- */
 export const API = {
   accesorios: 'http://localhost:8081/api/accesorios',
   categorias: 'http://localhost:8082/api/categorias',
