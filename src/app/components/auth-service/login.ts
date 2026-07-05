@@ -50,17 +50,22 @@ export class LoginComponent implements OnInit, OnDestroy {
   };
 
   ngOnInit(): void {
-    if (this.authService.isLoggedIn()) {
-      this.router.navigate(['/home']);
-      return;
-    }
-    this.loginForm = this.fb.group({
-      username: ['', Validators.required],
-      password: ['', Validators.required],
-    });
-    this.syncLockoutState();
-    this.startLockoutTimer();
-  }
+  // 1. Forzamos el cierre de sesión y limpiamos el almacenamiento viejo
+  localStorage.clear();
+  sessionStorage.clear();
+  
+  // Si tu AuthService tiene un método logout, también puedes llamarlo aquí:
+  // this.authService.logout(); 
+
+  // 2. Ahora inicializamos el formulario normalmente sin redirigir al home
+  this.loginForm = this.fb.group({
+    username: ['', Validators.required],
+    password: ['', Validators.required],
+  });
+  
+  this.syncLockoutState();
+  this.startLockoutTimer();
+}
 
   ngOnDestroy(): void {
     if (this.timerId) clearInterval(this.timerId);
