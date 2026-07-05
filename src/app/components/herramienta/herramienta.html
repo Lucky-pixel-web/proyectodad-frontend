@@ -22,7 +22,7 @@
     <div class="item-card" *ngFor="let h of filtradas; let i = index" [style.animation-delay.ms]="i * 60">
       <div class="item-card-header">
         <h3 class="item-card-title mb-0">{{ h.nombre }}</h3>
-        <span class="badge-status" [ngClass]="getEstadoClass(h.estado)">{{ h.estado }}</span>
+        <span class="badge-status" [ngClass]="getEstadoClass(h.estadoNombre)">{{ h.estadoNombre }}</span>
       </div>
       <div class="item-card-body">
         <div class="card-image-hero" *ngIf="h.foto">
@@ -32,10 +32,10 @@
           <span class="text-muted">Sin imagen</span>
         </div>
         <div class="item-card-meta">
-          <span><strong>Tipo:</strong> {{ h.tipo }}</span>
-          <span><strong>Marca:</strong> {{ h.marca }}</span>
+          <span><strong>Tipo:</strong> {{ h.tipoNombre }}</span>
+          <span><strong>Marca:</strong> {{ h.marcaNombre }}</span>
           <span><strong>Compra:</strong> {{ h.compra | date:'dd/MM/yyyy' }}</span>
-          <span><strong>Vida útil:</strong> {{ calcularVidaUtil(+(h.vidaUtil ?? '0')) }}</span>
+          <span><strong>Vida útil:</strong> {{ formatVidaUtil(h.vidaUtil) }}</span>
         </div>
         <div class="life-bar-wrap" [class.ok]="getVidaInfo(h).ok" [class.expired]="!getVidaInfo(h).ok">
           {{ getVidaInfo(h).text }}
@@ -74,18 +74,25 @@
         <div class="form-grid">
           <div class="form-group"><label>Nombre <span class="req">*</span></label><input class="form-control-custom" formControlName="nombre" placeholder="Ej: Taladro Inalámbrico" /></div>
           <div class="form-group"><label>Tipo <span class="req">*</span></label>
-            <select class="form-control-custom" formControlName="tipo">
-              <option>Eléctrica</option><option>A Batería</option><option>Manual</option><option>Neumática</option>
+            <select class="form-control-custom" formControlName="tipoId" *ngIf="tipos.length">
+              <option *ngFor="let t of tipos" [ngValue]="t.id">{{ t.nombre }}</option>
             </select>
+            <p class="form-hint warn" *ngIf="!tipos.length">No se cargaron tipos. Verifique ms-herramientas (8085) y recargue.</p>
           </div>
-          <div class="form-group"><label>Marca <span class="req">*</span></label><input class="form-control-custom" formControlName="marca" placeholder="Ej: DeWalt" /></div>
-          <div class="form-group"><label>Estado <span class="req">*</span></label>
-            <select class="form-control-custom" formControlName="estado">
-              <option>Excelente</option><option>Bueno</option><option>Por reparar</option><option>Mantenimiento</option>
+          <div class="form-group"><label>Marca <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="marcaId" *ngIf="marcas.length">
+              <option *ngFor="let m of marcas" [ngValue]="m.id">{{ m.nombre }}</option>
             </select>
+            <p class="form-hint warn" *ngIf="!marcas.length">No se cargaron marcas. Verifique ms-herramientas (8085) y recargue.</p>
+          </div>
+          <div class="form-group"><label>Estado <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="estadoId" *ngIf="estados.length">
+              <option *ngFor="let e of estados" [ngValue]="e.id">{{ e.nombre }}</option>
+            </select>
+            <p class="form-hint warn" *ngIf="!estados.length">No se cargaron estados. Verifique ms-herramientas (8085) y recargue.</p>
           </div>
           <div class="form-group"><label>Fecha de Compra <span class="req">*</span></label><input type="date" class="form-control-custom" formControlName="compra" /></div>
-          <div class="form-group"><label>Fecha de Inicio</label><input type="date" class="form-control-custom" formControlName="inicio" /></div>
+          <div class="form-group"><label>Fecha de Inicio <span class="req">*</span></label><input type="date" class="form-control-custom" formControlName="fechaInicio" /></div>
           <div class="form-group"><label>Vida útil (meses) <span class="req">*</span></label><input type="number" min="1" max="600" class="form-control-custom" formControlName="vidaUtil" /><span class="form-hint">Máximo 600 meses (50 años)</span></div>
           <div class="form-group full">
             <label>Imagen (opcional)</label>

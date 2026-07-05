@@ -1,310 +1,224 @@
 import { Component, OnInit, inject } from '@angular/core';
-
 import { CommonModule } from '@angular/common';
-
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-
+import { forkJoin } from 'rxjs';
 import { Header } from '../header/header';
-
 import { HerramientaService } from '../../services/herramienta';
-
+import { TipoHerramientaService } from '../../services/tipo-herramienta';
+import { MarcaHerramientaService } from '../../services/marca-herramienta';
+import { EstadoHerramientaService } from '../../services/estado-herramienta';
+import { CatalogoItem } from '../../services/catalogo';
 import { Herramienta } from '../../models/herramienta';
 
-import { cacheEntityImage, mergeEntityImages } from '../../utils/image-cache.util';
 import { formValidationMessage } from '../../utils/form-validation.util';
 import { httpErrorMessage } from '../../utils/http-error.util';
 
-
-
 @Component({
-
   selector: 'app-herramienta',
-
   standalone: true,
-
   imports: [CommonModule, ReactiveFormsModule, Header],
-
   templateUrl: './herramienta.html',
-
 })
-
 export class HerramientaComponent implements OnInit {
-
   herramientas: Herramienta[] = [];
-
   filtradas: Herramienta[] = [];
-
+  tipos: CatalogoItem[] = [];
+  marcas: CatalogoItem[] = [];
+  estados: CatalogoItem[] = [];
   busqueda = '';
-
   busquedaActiva = false;
-
   form!: FormGroup;
-
   showModal = false;
-
   isEditMode = false;
-
   herramientaId: number | null = null;
-
   buscando = false;
-
   formError = '';
-
   fotoNombre = '';
-
   fotoPreview = '';
-
-
+  private archivoSeleccionado?: File;
 
   private fb = inject(FormBuilder);
-
   private svc = inject(HerramientaService);
-
-
+  private tipoSvc = inject(TipoHerramientaService);
+  private marcaSvc = inject(MarcaHerramientaService);
+  private estadoSvc = inject(EstadoHerramientaService);
 
   ngOnInit(): void {
-
     this.form = this.fb.group({
-
-      nombre: ['', Validators.required],
-
-      tipo: ['Eléctrica', Validators.required],
-
-      marca: ['', Validators.required],
-
-      estado: ['Excelente', Validators.required],
-
+      nombre: ['', [Validators.required, Validators.maxLength(100)]],
+      tipoId: [null as number | null, Validators.required],
+      marcaId: [null as number | null, Validators.required],
+      estadoId: [null as number | null, Validators.required],
       compra: ['', Validators.required],
-
-      inicio: [''],
-
-      vidaUtil: ['24', Validators.required],
-
-      foto: [''],
-
+      fechaInicio: ['', Validators.required],
+      vidaUtil: [24, [Validators.required, Validators.min(1)]],
     });
-
     this.listar();
-
   }
-
-
 
   get sinResultadosBusqueda(): boolean {
-
     return this.busquedaActiva && !this.filtradas.length && this.herramientas.length > 0;
-
   }
 
-
+  private cargarCatalogos(onLoaded?: () => void): void {
+    forkJoin({
+      tipos: this.tipoSvc.listar(),
+      marcas: this.marcaSvc.listar(),
+      estados: this.estadoSvc.listar(),
+    }).subscribe({
+      next: ({ tipos, marcas, estados }) => {
+        this.tipos = tipos;
+        this.marcas = marcas;
+        this.estados = estados;
+        onLoaded?.();
+      },
+      error: () => {
+        this.tipos = [];
+        this.marcas = [];
+        this.estados = [];
+        onLoaded?.();
+      },
+    });
+  }
 
   listar(): void {
-
     this.buscando = true;
-
     this.svc.listar().subscribe({
-
       next: (data) => {
-
-        this.herramientas = mergeEntityImages('herramienta', data);
-
+        this.herramientas = data;
         this.filtrar();
-
         this.buscando = false;
-
       },
-
       error: () => { this.buscando = false; },
-
     });
-
   }
-
-
 
   filtrar(): void {
-
     this.busquedaActiva = !!this.busqueda.trim();
-
     const q = this.busqueda.toLowerCase();
-
     this.filtradas = this.herramientas.filter(
-
-      (h) => !q || h.nombre?.toLowerCase().includes(q) || h.marca?.toLowerCase().includes(q)
-
+      (h) => !q || h.nombre?.toLowerCase().includes(q) || h.marcaNombre?.toLowerCase().includes(q)
     );
-
   }
 
-
-
-  getEstadoClass(estado?: string): string {
-
-    const e = (estado || '').toLowerCase();
-
-    if (e.includes('excelente') || e.includes('disponible') || e.includes('bueno')) return 'success';
-
-    if (e.includes('reparar') || e.includes('mantenimiento')) return 'warning';
-
+  getEstadoClass(estadoNombre?: string): string {
+    const e = (estadoNombre || '').toLowerCase();
+    if (e.includes('disponible') || e.includes('excelente') || e.includes('bueno')) return 'success';
+    if (e.includes('mantenimiento') || e.includes('reparar')) return 'warning';
+    if (e.includes('malogrado') || e.includes('malo')) return 'danger';
     return 'info';
-
   }
 
-
-
-  calcularVidaUtil(dias: number): string {
-    if (!dias || dias <= 0) return 'Sin datos';
-    const anios = Math.floor(dias / 365);
-    const meses = Math.floor((dias % 365) / 30);
-    const d = dias % 30;
+  formatVidaUtil(meses?: number): string {
+    if (!meses || meses <= 0) return 'Sin datos';
+    const anios = Math.floor(meses / 12);
+    const restoMeses = meses % 12;
     const parts: string[] = [];
     if (anios) parts.push(`${anios} año${anios !== 1 ? 's' : ''}`);
-    if (meses) parts.push(`${meses} mes${meses !== 1 ? 'es' : ''}`);
-    if (d || parts.length === 0) parts.push(`${d} día${d !== 1 ? 's' : ''}`);
+    if (restoMeses || !parts.length) parts.push(`${restoMeses} mes${restoMeses !== 1 ? 'es' : ''}`);
     return parts.join(', ');
   }
 
   getVidaInfo(h: Herramienta): { text: string; ok: boolean } {
-
-    if (!h.compra || !h.vidaUtil) return { text: 'Sin datos de vida útil', ok: true };
-
-    const mesesRaw = parseInt(String(h.vidaUtil).replace(/[^\d]/g, ''), 10);
-
-    const meses = Number.isFinite(mesesRaw) && mesesRaw > 0 ? Math.min(mesesRaw, 600) : 24;
-
-    const inicio = new Date(h.compra);
-
-    if (isNaN(inicio.getTime())) return { text: 'Fecha de compra inválida', ok: false };
-
-    const fin = new Date(inicio.getTime());
-
-    fin.setMonth(fin.getMonth() + meses);
-
-    if (isNaN(fin.getTime())) return { text: 'Vida útil fuera de rango (máx. 600 meses)', ok: false };
-
-    const diff = Math.ceil((fin.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-
-    if (!Number.isFinite(diff)) return { text: 'No se pudo calcular vida útil', ok: true };
-
-    if (diff >= 0) return { text: `${diff} días restantes de vida útil`, ok: true };
-
-    return { text: `Expiró hace ${Math.abs(diff)} días`, ok: false };
-
+    if (h.diasRestantes === undefined || h.diasRestantes === null) {
+      return { text: 'Sin datos de vida útil', ok: true };
+    }
+    if (h.diasRestantes >= 0) return { text: `${h.diasRestantes} días restantes de vida útil`, ok: true };
+    return { text: `Expiró hace ${Math.abs(h.diasRestantes)} días`, ok: false };
   }
-
-
 
   async onFotoSelected(event: Event): Promise<void> {
-    const { pickImageFromInput } = await import('../../utils/file-maps.util');
-    const picked = await pickImageFromInput(event);
-    if (!picked) return;
-    this.fotoNombre = picked.name;
-    this.fotoPreview = picked.dataUrl;
-    this.form.patchValue({ foto: picked.dataUrl });
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const { readImageAsDataUrl } = await import('../../utils/file-maps.util');
+    this.archivoSeleccionado = file;
+    this.fotoNombre = file.name;
+    this.fotoPreview = await readImageAsDataUrl(file);
+    input.value = '';
   }
-
-
 
   abrirModalCrear(): void {
-
     this.isEditMode = false;
-
     this.herramientaId = null;
-
     this.formError = '';
-
     this.fotoNombre = '';
-
     this.fotoPreview = '';
-
-    this.form.reset({ tipo: 'Eléctrica', estado: 'Excelente', vidaUtil: '24' });
-
-    this.showModal = true;
-
+    this.archivoSeleccionado = undefined;
+    this.cargarCatalogos(() => {
+      this.form.reset({
+        tipoId: this.tipos[0]?.id ?? null,
+        marcaId: this.marcas[0]?.id ?? null,
+        estadoId: this.estados[0]?.id ?? null,
+        vidaUtil: 24,
+      });
+      this.showModal = true;
+    });
   }
-
-
 
   abrirModalEditar(h: Herramienta): void {
-
     this.isEditMode = true;
-
     this.herramientaId = h.id ?? null;
-
     this.formError = '';
-
-    const compra = h.compra ? String(h.compra).split('T')[0] : '';
-
-    const foto = h.foto || '';
-
-    this.fotoNombre = foto ? 'imagen-cargada' : '';
-
-    this.fotoPreview = foto;
-
-    this.form.patchValue({ ...h, compra, inicio: compra, foto, estado: h.estado || 'Bueno' });
-
-    this.showModal = true;
-
+    this.fotoNombre = h.foto ? 'imagen-cargada' : '';
+    this.fotoPreview = h.foto || '';
+    this.archivoSeleccionado = undefined;
+    this.cargarCatalogos(() => {
+      const tipoId = this.tipos.find((t) => t.nombre === h.tipoNombre)?.id ?? this.tipos[0]?.id ?? null;
+      const marcaId = this.marcas.find((m) => m.nombre === h.marcaNombre)?.id ?? this.marcas[0]?.id ?? null;
+      const estadoId = this.estados.find((e) => e.nombre === h.estadoNombre)?.id ?? this.estados[0]?.id ?? null;
+      this.form.patchValue({
+        nombre: h.nombre,
+        tipoId,
+        marcaId,
+        estadoId,
+        compra: h.compra ? String(h.compra).split('T')[0] : '',
+        fechaInicio: h.fechaInicio ? String(h.fechaInicio).split('T')[0] : '',
+        vidaUtil: h.vidaUtil ?? 24,
+      });
+      this.showModal = true;
+    });
   }
-
-
 
   cerrarModal(): void { this.showModal = false; this.formError = ''; }
 
-
-
   guardar(): void {
-
+    if (!this.tipos.length || !this.marcas.length || !this.estados.length) {
+      this.formError = 'No se cargaron los catálogos de tipo/marca/estado. Verifique ms-herramientas (8085) y recargue.';
+      return;
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.formError = formValidationMessage(this.form);
       return;
     }
-
     this.formError = '';
-
-    const { inicio, ...data } = this.form.value;
-
-    const payload: Herramienta = { ...data, vidaUtil: String(data.vidaUtil) };
-
+    const v = this.form.value;
+    const payload: Herramienta = {
+      nombre: v.nombre,
+      tipoId: Number(v.tipoId),
+      marcaId: Number(v.marcaId),
+      estadoId: Number(v.estadoId),
+      compra: v.compra,
+      fechaInicio: v.fechaInicio,
+      vidaUtil: Number(v.vidaUtil),
+    };
     const obs = this.isEditMode && this.herramientaId
-
-      ? this.svc.actualizar(this.herramientaId, payload)
-
-      : this.svc.crear(payload);
-
+      ? this.svc.actualizar(this.herramientaId, payload, this.archivoSeleccionado)
+      : this.svc.crear(payload, this.archivoSeleccionado);
     obs.subscribe({
-
-      next: (res) => {
-
-        const id = res.id ?? this.herramientaId;
-
-        if (id && payload.foto) cacheEntityImage('herramienta', id, payload.foto);
-
+      next: () => {
         this.cerrarModal();
-
         this.listar();
-
       },
-
       error: (err) => {
         this.formError = httpErrorMessage(err, 'No se pudo guardar. Verifique ms-herramientas (8085).');
       },
-
     });
-
   }
-
-
 
   eliminar(id?: number): void {
-
     if (!id || !confirm('¿Eliminar esta herramienta?')) return;
-
     this.svc.eliminar(id).subscribe({ next: () => this.listar() });
-
   }
-
 }
-
-

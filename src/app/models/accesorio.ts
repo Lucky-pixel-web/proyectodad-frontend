@@ -4,8 +4,9 @@ export class Accesorio {
     descripcion?: string;
     precio?: number;
     stock?: number;
-    categoria?: string;
-    marca?: string;
-    estado?: string;
+    marcaId?: number;
+    marcaNombre?: string;
+    estadoId?: number;
+    estadoNombre?: string;
     foto?: string;
 }

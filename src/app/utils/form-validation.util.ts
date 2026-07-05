@@ -7,6 +7,12 @@ const FIELD_LABELS: Record<string, string> = {
   descripcion: 'Descripción',
   estado: 'Estado',
   estadoId: 'Estado',
+  tipoId: 'Tipo',
+  marcaId: 'Marca',
+  compra: 'Fecha de compra',
+  fechaInicio: 'Fecha de inicio',
+  vidaUtil: 'Vida útil',
+  precio: 'Precio',
   categoriaId: 'Categoría',
   clienteId: 'Cliente',
   herramientaId: 'Herramienta',
@@ -31,6 +37,14 @@ export function formValidationMessage(form: FormGroup): string {
     if (ctrl.errors?.['min']) {
       if (key === 'stock') return 'La cantidad debe ser al menos 1. No se permite 0.';
       return `El campo «${label}» no cumple el valor mínimo permitido.`;
+    }
+    if (ctrl.errors?.['maxlength']) {
+      const max = ctrl.errors['maxlength'].requiredLength;
+      return `El campo «${label}» no debe exceder ${max} caracteres.`;
+    }
+    if (ctrl.errors?.['minlength']) {
+      const min = ctrl.errors['minlength'].requiredLength;
+      return `El campo «${label}» debe tener al menos ${min} caracteres.`;
     }
     if (ctrl.errors?.['pattern']) return `El campo «${label}» tiene un formato inválido.`;
   }

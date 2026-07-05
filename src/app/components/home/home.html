@@ -45,8 +45,8 @@
       </div>
 
       <div class="chart-card animate-in" style="animation-delay:0.15s">
-        <h3 class="chart-title">Accesorios por Categoría</h3>
-        <p class="chart-subtitle">Cantidad por tipo de accesorio</p>
+        <h3 class="chart-title">Accesorios por Estado</h3>
+        <p class="chart-subtitle">Cantidad por estado del accesorio</p>
         <div class="bar-chart" *ngIf="categoriasAccesorios.length; else noAcc">
           <div class="bar-row" *ngFor="let item of categoriasAccesorios">
             <span class="bar-label">{{ item.label }}</span>

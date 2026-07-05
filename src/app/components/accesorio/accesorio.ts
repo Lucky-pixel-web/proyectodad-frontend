@@ -1,14 +1,15 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { Header } from '../header/header';
 import { AccesorioService } from '../../services/accesorio';
+import { MarcaAccesorioService } from '../../services/marca-accesorio';
+import { EstadoAccesorioService } from '../../services/estado-accesorio';
+import { CatalogoItem } from '../../services/catalogo';
 import { Accesorio } from '../../models/accesorio';
-import { cacheEntityImage, mergeEntityImages } from '../../utils/image-cache.util';
 import { httpErrorMessage } from '../../utils/http-error.util';
 import { formValidationMessage } from '../../utils/form-validation.util';
-
-const ESTADOS_UI = ['Bueno', 'Regular', 'Malo'] as const;
 
 @Component({
   selector: 'app-accesorio',
@@ -19,6 +20,8 @@ const ESTADOS_UI = ['Bueno', 'Regular', 'Malo'] as const;
 export class AccesorioComponent implements OnInit {
   accesorios: Accesorio[] = [];
   filtrados: Accesorio[] = [];
+  marcas: CatalogoItem[] = [];
+  estados: CatalogoItem[] = [];
   busqueda = '';
   busquedaActiva = false;
   form!: FormGroup;
@@ -29,34 +32,23 @@ export class AccesorioComponent implements OnInit {
   formError = '';
   fotoNombre = '';
   fotoPreview = '';
+  private archivoSeleccionado?: File;
 
   private fb = inject(FormBuilder);
   private svc = inject(AccesorioService);
+  private marcaSvc = inject(MarcaAccesorioService);
+  private estadoSvc = inject(EstadoAccesorioService);
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      nombre: ['', Validators.required],
-      marca: ['', Validators.required],
-      stock: [100, [Validators.required, Validators.min(1)]],
-      descripcion: ['', Validators.required],
-      categoria: ['Consumibles', Validators.required],
-      precio: [1, [Validators.required, Validators.min(0.01)]],
-      estado: ['Bueno', Validators.required],
-      foto: [''],
+      nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      marcaId: [null as number | null, Validators.required],
+      stock: [100, [Validators.required, Validators.min(1), Validators.max(1000)]],
+      descripcion: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(150)]],
+      precio: [1, [Validators.required, Validators.min(0.01), Validators.max(999.99)]],
+      estadoId: [null as number | null, Validators.required],
     });
     this.listar();
-  }
-
-  calcularVidaUtil(dias: number): string {
-    if (!dias || dias <= 0) return 'Sin datos';
-    const anios = Math.floor(dias / 365);
-    const meses = Math.floor((dias % 365) / 30);
-    const d = dias % 30;
-    const parts: string[] = [];
-    if (anios) parts.push(`${anios} año${anios !== 1 ? 's' : ''}`);
-    if (meses) parts.push(`${meses} mes${meses !== 1 ? 'es' : ''}`);
-    if (d || parts.length === 0) parts.push(`${d} día${d !== 1 ? 's' : ''}`);
-    return parts.join(', ');
   }
 
   get totalAccesorios() { return this.accesorios.length; }
@@ -65,11 +57,29 @@ export class AccesorioComponent implements OnInit {
     return this.busquedaActiva && !this.filtrados.length && this.accesorios.length > 0;
   }
 
+  private cargarCatalogos(onLoaded?: () => void): void {
+    forkJoin({
+      marcas: this.marcaSvc.listar(),
+      estados: this.estadoSvc.listar(),
+    }).subscribe({
+      next: ({ marcas, estados }) => {
+        this.marcas = marcas;
+        this.estados = estados;
+        onLoaded?.();
+      },
+      error: () => {
+        this.marcas = [];
+        this.estados = [];
+        onLoaded?.();
+      },
+    });
+  }
+
   listar(): void {
     this.buscando = true;
     this.svc.listar().subscribe({
       next: (data) => {
-        this.accesorios = mergeEntityImages('accesorio', data);
+        this.accesorios = data;
         this.filtrar();
         this.buscando = false;
       },
@@ -81,17 +91,19 @@ export class AccesorioComponent implements OnInit {
     this.busquedaActiva = !!this.busqueda.trim();
     const q = this.busqueda.toLowerCase();
     this.filtrados = this.accesorios.filter(
-      (a) => !q || a.nombre?.toLowerCase().includes(q) || a.marca?.toLowerCase().includes(q) || a.descripcion?.toLowerCase().includes(q)
+      (a) => !q || a.nombre?.toLowerCase().includes(q) || a.marcaNombre?.toLowerCase().includes(q) || a.descripcion?.toLowerCase().includes(q)
     );
   }
 
   async onFotoSelected(event: Event): Promise<void> {
-    const { pickImageFromInput } = await import('../../utils/file-maps.util');
-    const picked = await pickImageFromInput(event);
-    if (!picked) return;
-    this.fotoNombre = picked.name;
-    this.fotoPreview = picked.dataUrl;
-    this.form.patchValue({ foto: picked.dataUrl });
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const { readImageAsDataUrl } = await import('../../utils/file-maps.util');
+    this.archivoSeleccionado = file;
+    this.fotoNombre = file.name;
+    this.fotoPreview = await readImageAsDataUrl(file);
+    input.value = '';
   }
 
   abrirModalCrear(): void {
@@ -100,8 +112,16 @@ export class AccesorioComponent implements OnInit {
     this.formError = '';
     this.fotoNombre = '';
     this.fotoPreview = '';
-    this.form.reset({ stock: 100, precio: 1, estado: 'Bueno', categoria: 'Consumibles' });
-    this.showModal = true;
+    this.archivoSeleccionado = undefined;
+    this.cargarCatalogos(() => {
+      this.form.reset({
+        stock: 100,
+        precio: 1,
+        marcaId: this.marcas[0]?.id ?? null,
+        estadoId: this.estados[0]?.id ?? null,
+      });
+      this.showModal = true;
+    });
   }
 
   abrirModalEditar(a: Accesorio): void {
@@ -110,19 +130,18 @@ export class AccesorioComponent implements OnInit {
     this.formError = '';
     this.fotoPreview = a.foto || '';
     this.fotoNombre = a.foto ? 'imagen-cargada' : '';
-    this.form.patchValue({
-      ...a,
-      stock: Math.max(1, a.stock ?? 1),
-      precio: a.precio && a.precio > 0 ? a.precio : 1,
-      estado: this.estadoUi(a.estado),
+    this.archivoSeleccionado = undefined;
+    this.cargarCatalogos(() => {
+      this.form.patchValue({
+        nombre: a.nombre,
+        marcaId: a.marcaId ?? this.marcas[0]?.id ?? null,
+        stock: Math.max(1, a.stock ?? 1),
+        descripcion: a.descripcion,
+        precio: a.precio && a.precio > 0 ? a.precio : 1,
+        estadoId: a.estadoId ?? this.estados[0]?.id ?? null,
+      });
+      this.showModal = true;
     });
-    this.showModal = true;
-  }
-
-  private estadoUi(estado?: string): string {
-    const e = (estado || '').trim();
-    if (ESTADOS_UI.includes(e as typeof ESTADOS_UI[number])) return e;
-    return 'Bueno';
   }
 
   onStockInput(): void {
@@ -136,6 +155,10 @@ export class AccesorioComponent implements OnInit {
   cerrarModal(): void { this.showModal = false; this.formError = ''; }
 
   guardar(): void {
+    if (!this.marcas.length || !this.estados.length) {
+      this.formError = 'No se cargaron los catálogos de marca/estado. Verifique ms-accesorios (8081) y recargue.';
+      return;
+    }
     if (this.form.get('stock')?.value === 0 || this.form.get('stock')?.value < 1) {
       this.form.get('stock')?.setValue(1);
     }
@@ -145,21 +168,25 @@ export class AccesorioComponent implements OnInit {
       return;
     }
     this.formError = '';
-    const { foto, estado, ...apiPayload } = this.form.value;
-    const payload: Accesorio = { ...apiPayload, precio: Number(apiPayload.precio) || 1 };
-    const fotoData = foto as string;
+    const v = this.form.value;
+    const payload: Accesorio = {
+      nombre: v.nombre,
+      descripcion: v.descripcion,
+      precio: Number(v.precio) || 1,
+      stock: Number(v.stock),
+      marcaId: Number(v.marcaId),
+      estadoId: Number(v.estadoId),
+    };
     const obs = this.isEditMode && this.accesorioId
-      ? this.svc.actualizar(this.accesorioId, payload)
-      : this.svc.crear(payload);
+      ? this.svc.actualizar(this.accesorioId, payload, this.archivoSeleccionado)
+      : this.svc.crear(payload, this.archivoSeleccionado);
     obs.subscribe({
-      next: (res) => {
-        const id = res.id ?? this.accesorioId;
-        if (id && fotoData) cacheEntityImage('accesorio', id, fotoData);
+      next: () => {
         this.cerrarModal();
         this.listar();
       },
       error: (err) => {
-        this.formError = httpErrorMessage(err, 'No se pudo guardar. Verifique ms-accesorios (8081) y que precio > 0, stock ≥ 1 y marca sin números.');
+        this.formError = httpErrorMessage(err, 'No se pudo guardar. Verifique ms-accesorios (8081) y que precio > 0, stock ≥ 1.');
       },
     });
   }

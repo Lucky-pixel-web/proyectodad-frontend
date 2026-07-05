@@ -57,7 +57,7 @@ export class Home implements OnInit {
         this.totalHerramientas = data.length;
         const map = new Map<string, number>();
         data.forEach((h) => {
-          const e = (h.estado || 'Sin estado').toLowerCase();
+          const e = (h.estadoNombre || 'Sin estado').toLowerCase();
           map.set(e, (map.get(e) || 0) + 1);
         });
         const max = Math.max(...Array.from(map.values()), 1);
@@ -76,7 +76,7 @@ export class Home implements OnInit {
         this.totalAccesorios = data.length;
         const map = new Map<string, number>();
         data.forEach((a) => {
-          const c = a.categoria || 'Otros';
+          const c = a.estadoNombre || 'Sin estado';
           map.set(c, (map.get(c) || 0) + 1);
         });
         const max = Math.max(...Array.from(map.values()), 1);
