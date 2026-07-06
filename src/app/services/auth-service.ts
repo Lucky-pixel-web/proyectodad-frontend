@@ -51,15 +51,11 @@ export class AuthService {
       apellidos: payload.apellidos,
       dni: payload.dni,
     };
-    return this.http.post<AuthResponse>(`${this.URL_AUTH}/register?rol=USER`, body);
+    return this.http.post<AuthResponse>(`${this.URL_AUTH}/register`, body);
   }
 
   listUsuarios(): Observable<UsuarioResponse[]> {
     return this.http.get<UsuarioResponse[]>(`${this.URL_AUTH}/usuarios`);
-  }
-
-  registerAdmin(credentials: { username: string; password: string }): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.URL_AUTH}/register?rol=ADMIN`, credentials);
   }
 
   private persistSession(response: AuthResponse): void {
