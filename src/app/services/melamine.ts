@@ -20,7 +20,9 @@ interface MelamineResponse {
   imagenUrl: string | null;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class MelamineService {
   private apiUrl = API.melamine;
   private http = inject(HttpClient);
@@ -37,22 +39,28 @@ export class MelamineService {
     );
   }
 
-  crear(m: Melamine, imagen?: File): Observable<Melamine> {
-    const formData = this.buildFormData(m, imagen);
+  buscarPorNombre(nombre: string): Observable<Melamine[]> {
+    return this.http.get<MelamineResponse[]>(`${this.apiUrl}/buscar?nombre=${nombre}`).pipe(
+      map((lista) => lista.map((r) => this.mapResponse(r)))
+    );
+  }
+
+  crear(melamine: Melamine, imagen?: File): Observable<Melamine> {
+    const formData = this.buildFormData(melamine, imagen);
     return this.http.post<MelamineResponse>(this.apiUrl, formData).pipe(
       map((r) => this.mapResponse(r))
     );
   }
 
-  actualizar(id: number, m: Melamine, imagen?: File): Observable<Melamine> {
-    const formData = this.buildFormData(m, imagen);
+  actualizar(id: number, melamine: Melamine, imagen?: File): Observable<Melamine> {
+    const formData = this.buildFormData(melamine, imagen);
     return this.http.put<MelamineResponse>(`${this.apiUrl}/${id}`, formData).pipe(
       map((r) => this.mapResponse(r))
     );
   }
 
-  eliminar(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  eliminar(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }
 
   private buildFormData(m: Melamine, imagen?: File): FormData {

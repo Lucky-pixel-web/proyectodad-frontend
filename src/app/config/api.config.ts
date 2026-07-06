@@ -9,4 +9,5 @@ export const API = {
   proveedores: `${GATEWAY}/api/proveedores`,
   proyectos: `${GATEWAY}/api/proyectos`,
   auth: `${GATEWAY}/auth`,
+
 } as const;

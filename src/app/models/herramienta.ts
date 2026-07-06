@@ -1,6 +1,7 @@
 export class Herramienta {
     id?: number;
     nombre?: string;
+    cantidad?: number;
     tipoId?: number;
     tipoNombre?: string;
     marcaId?: number;

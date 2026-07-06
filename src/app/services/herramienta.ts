@@ -15,6 +15,7 @@ interface HerramientaResponse {
   fechaInicio: string;
   vidaUtil: number;
   diasRestantes: number;
+  cantidad: number;
   imagenUrl: string | null;
 }
 
@@ -58,6 +59,7 @@ export class HerramientaService {
   private buildFormData(h: Herramienta, imagen?: File): FormData {
     const request = {
       nombre: h.nombre,
+      cantidad: h.cantidad,
       tipoId: h.tipoId,
       marcaId: h.marcaId,
       estadoId: h.estadoId,
@@ -75,6 +77,7 @@ export class HerramientaService {
     return {
       id: r.id,
       nombre: r.nombre,
+      cantidad: r.cantidad,
       tipoNombre: r.tipoNombre,
       marcaNombre: r.marcaNombre,
       estadoNombre: r.estadoNombre,

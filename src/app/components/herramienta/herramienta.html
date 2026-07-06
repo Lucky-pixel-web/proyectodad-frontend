@@ -40,6 +40,7 @@
           <span><strong>Marca:</strong> {{ h.marcaNombre }}</span>
           <span><strong>Compra:</strong> {{ h.compra | date:'dd/MM/yyyy' }}</span>
           <span><strong>Vida útil:</strong> {{ formatVidaUtil(h.vidaUtil) }}</span>
+          <span><strong>Cantidad:</strong> {{ h.cantidad }}</span>
         </div>
         <div class="life-bar-wrap" [class.ok]="getVidaInfo(h).ok" [class.expired]="!getVidaInfo(h).ok">
           {{ getVidaInfo(h).text }}
@@ -78,6 +79,7 @@
         <div class="modal-form-section">
         <div class="form-grid">
           <div class="form-group"><label>Nombre <span class="req">*</span></label><input class="form-control-custom" formControlName="nombre" placeholder="Ej: Taladro Inalámbrico" /></div>
+          
           <div class="form-group"><label>Tipo <span class="req">*</span></label>
             <select class="form-control-custom" formControlName="tipoId" *ngIf="tipos.length">
               <option *ngFor="let t of tipos" [ngValue]="t.id">{{ t.nombre }}</option>
@@ -99,6 +101,16 @@
           <div class="form-group"><label>Fecha de Compra <span class="req">*</span></label><input type="date" class="form-control-custom" formControlName="compra" /></div>
           <div class="form-group"><label>Fecha de Inicio <span class="req">*</span></label><input type="date" class="form-control-custom" formControlName="fechaInicio" /></div>
           <div class="form-group"><label>Vida útil (meses) <span class="req">*</span></label><input type="number" min="1" max="600" class="form-control-custom" formControlName="vidaUtil" /><span class="form-hint">Máximo 600 meses (50 años)</span></div>
+          <div class="form-group">
+  <label>Cantidad <span class="req">*</span></label>
+  <input 
+    type="number" 
+    min="1" 
+    class="form-control-custom" 
+    formControlName="cantidad" 
+    placeholder="Ej: 1" 
+  />
+</div>
           <div class="form-group full">
             <label>Imagen (opcional)</label>
             <div class="file-upload-row">

@@ -53,6 +53,7 @@ export class HerramientaComponent implements OnInit {
       compra: ['', Validators.required],
       fechaInicio: ['', Validators.required],
       vidaUtil: [24, [Validators.required, Validators.min(1)]],
+      cantidad: [1, [Validators.required, Validators.min(1)]],
     });
     this.listar();
     this.estadoSvc.listar().subscribe({ next: (estados) => (this.estados = estados) });
@@ -206,6 +207,7 @@ export class HerramientaComponent implements OnInit {
       compra: v.compra,
       fechaInicio: v.fechaInicio,
       vidaUtil: Number(v.vidaUtil),
+      cantidad: Number(v.cantidad),
     };
     const obs = this.isEditMode && this.herramientaId
       ? this.svc.actualizar(this.herramientaId, payload, this.archivoSeleccionado)

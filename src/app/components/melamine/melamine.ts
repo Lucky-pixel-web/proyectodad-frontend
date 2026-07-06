@@ -4,12 +4,8 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { forkJoin } from 'rxjs';
 import { Header } from '../header/header';
 import { MelamineService } from '../../services/melamine';
-import { EstadoMelamineService } from '../../services/estado-melamine';
-import { MarcaMelamineService } from '../../services/marca-melamine';
-import { ColorMelamineService } from '../../services/color-melamine';
-import { CatalogoItem } from '../../services/catalogo';
+import { CatalogoService, CatalogoItem } from '../../services/catalogo'; // <- Único servicio de catálogos
 import { Melamine } from '../../models/melamine';
-
 import { httpErrorMessage } from '../../utils/http-error.util';
 import { formValidationMessage } from '../../utils/form-validation.util';
 
@@ -20,78 +16,73 @@ import { formValidationMessage } from '../../utils/form-validation.util';
   templateUrl: './melamine.html',
 })
 export class MelamineComponent implements OnInit {
-  items: Melamine[] = [];
+  melamines: Melamine[] = [];
   filtrados: Melamine[] = [];
-  estados: CatalogoItem[] = [];
   marcas: CatalogoItem[] = [];
+  estados: CatalogoItem[] = [];
   colores: CatalogoItem[] = [];
   busqueda = '';
-  filtroEstado = 'Todos';
+  busquedaActiva = false;
   form!: FormGroup;
   showModal = false;
   isEditMode = false;
-  itemId: number | null = null;
+  melamineId: number | null = null;
   buscando = false;
   formError = '';
-  busquedaActiva = false;
   fotoNombre = '';
   fotoPreview = '';
   private archivoSeleccionado?: File;
 
   private fb = inject(FormBuilder);
   private svc = inject(MelamineService);
-  private estadoSvc = inject(EstadoMelamineService);
-  private marcaSvc = inject(MarcaMelamineService);
-  private colorSvc = inject(ColorMelamineService);
+  private catSvc = inject(CatalogoService); // <- Inyección limpia del catálogo centralizado
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      nombre: ['', Validators.required],
-      ancho: [1220, Validators.required],
-      largo: [2440, Validators.required],
-      cantidad: [1, [Validators.required, Validators.min(0)]],
-      colorId: [null as number | null, Validators.required],
+      nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      ancho: [100, [Validators.required, Validators.min(1), Validators.max(500)]],
+      largo: [200, [Validators.required, Validators.min(1), Validators.max(500)]],
+      cantidad: [1, [Validators.required, Validators.min(1), Validators.max(1000)]],
       marcaId: [null as number | null, Validators.required],
       estadoId: [null as number | null, Validators.required],
+      colorId: [null as number | null, Validators.required],
     });
     this.listar();
-    this.estadoSvc.listar().subscribe({ next: (estados) => (this.estados = estados) });
+  }
+
+  get totalMelamines() { return this.melamines.length; }
+  get sinStock() { return this.melamines.filter((m) => (m.cantidad ?? 0) === 0).length; }
+  get sinResultadosBusqueda(): boolean {
+    return this.busquedaActiva && !this.filtrados.length && this.melamines.length > 0;
   }
 
   private cargarCatalogos(onLoaded?: () => void): void {
+    // Solución al error TS2571: Ahora se llama a los métodos existentes en tu CatalogoService
     forkJoin({
-      estados: this.estadoSvc.listar(),
-      marcas: this.marcaSvc.listar(),
-      colores: this.colorSvc.listar(),
+      marcas: this.catSvc.listarMarcasMelamine(),
+      estados: this.catSvc.listarEstadosMelamine(),
+      colores: this.catSvc.listarColoresMelamine(),
     }).subscribe({
-      next: ({ estados, marcas, colores }) => {
-        this.estados = estados;
+      next: ({ marcas, estados, colores }) => {
         this.marcas = marcas;
+        this.estados = estados;
         this.colores = colores;
         onLoaded?.();
       },
       error: () => {
-        this.estados = [];
         this.marcas = [];
+        this.estados = [];
         this.colores = [];
         onLoaded?.();
       },
     });
   }
 
-  get countBueno() { return this.items.filter((m) => (m.estadoNombre || '').toLowerCase().includes('bueno')).length; }
-  get countRegular() { return this.items.filter((m) => (m.estadoNombre || '').toLowerCase().includes('regular')).length; }
-  get countMalo() { return this.items.filter((m) => (m.estadoNombre || '').toLowerCase().includes('malo')).length; }
-
-  get sinResultadosBusqueda(): boolean {
-    return this.busquedaActiva && !this.filtrados.length && this.items.length > 0;
-  }
-
   listar(): void {
     this.buscando = true;
     this.svc.listar().subscribe({
       next: (data) => {
-        this.items = data;
+        this.melamines = data;
         this.filtrar();
         this.buscando = false;
       },
@@ -102,21 +93,12 @@ export class MelamineComponent implements OnInit {
   filtrar(): void {
     this.busquedaActiva = !!this.busqueda.trim();
     const q = this.busqueda.toLowerCase();
-    this.filtrados = this.items.filter((m) => {
-      const matchQ = !q || m.nombre?.toLowerCase().includes(q) || m.colorNombre?.toLowerCase().includes(q) || m.marcaNombre?.toLowerCase().includes(q);
-      const matchE = this.filtroEstado === 'Todos' || (m.estadoNombre || '').toLowerCase().includes(this.filtroEstado.toLowerCase());
-      return matchQ && matchE;
-    });
-  }
-
-  setFiltro(f: string): void { this.filtroEstado = f; this.filtrar(); }
-
-  getEstadoClass(n?: string): string {
-    const e = (n || '').toLowerCase();
-    if (e.includes('bueno')) return 'success';
-    if (e.includes('regular')) return 'warning';
-    if (e.includes('malo')) return 'danger';
-    return 'info';
+    this.filtrados = this.melamines.filter(
+      (m) => !q || 
+        m.nombre?.toLowerCase().includes(q) || 
+        m.marcaNombre?.toLowerCase().includes(q) || 
+        m.colorNombre?.toLowerCase().includes(q)
+    );
   }
 
   async onFotoSelected(event: Event): Promise<void> {
@@ -132,19 +114,19 @@ export class MelamineComponent implements OnInit {
 
   abrirModalCrear(): void {
     this.isEditMode = false;
-    this.itemId = null;
+    this.melamineId = null;
     this.formError = '';
     this.fotoNombre = '';
     this.fotoPreview = '';
     this.archivoSeleccionado = undefined;
     this.cargarCatalogos(() => {
       this.form.reset({
-        ancho: 1220,
-        largo: 2440,
+        ancho: 100,
+        largo: 200,
         cantidad: 1,
-        colorId: this.colores[0]?.id ?? null,
         marcaId: this.marcas[0]?.id ?? null,
         estadoId: this.estados[0]?.id ?? null,
+        colorId: this.colores[0]?.id ?? null,
       });
       this.showModal = true;
     });
@@ -152,31 +134,45 @@ export class MelamineComponent implements OnInit {
 
   abrirModalEditar(m: Melamine): void {
     this.isEditMode = true;
-    this.itemId = m.id ?? null;
+    this.melamineId = m.id ?? null;
     this.formError = '';
-    this.fotoNombre = m.foto ? 'imagen-cargada' : '';
     this.fotoPreview = m.foto || '';
+    this.fotoNombre = m.foto ? 'imagen-cargada' : '';
     this.archivoSeleccionado = undefined;
     this.cargarCatalogos(() => {
       this.form.patchValue({
         nombre: m.nombre,
-        ancho: m.ancho,
-        largo: m.largo,
-        cantidad: m.cantidad,
-        colorId: m.colorId ?? this.colores[0]?.id ?? null,
+        ancho: m.ancho && m.ancho > 0 ? m.ancho : 100,
+        largo: m.largo && m.largo > 0 ? m.largo : 200,
+        cantidad: Math.max(1, m.cantidad ?? 1),
         marcaId: m.marcaId ?? this.marcas[0]?.id ?? null,
         estadoId: m.estadoId ?? this.estados[0]?.id ?? null,
+        colorId: m.colorId ?? this.colores[0]?.id ?? null,
       });
       this.showModal = true;
     });
   }
 
-  cerrarModal(): void { this.showModal = false; this.formError = ''; }
+  onCantidadInput(): void {
+    const ctrl = this.form.get('cantidad');
+    const val = Number(ctrl?.value);
+    if (val === 0 || val < 1) {
+      ctrl?.setValue(1);
+    }
+  }
+
+  cerrarModal(): void { 
+    this.showModal = false; 
+    this.formError = ''; 
+  }
 
   guardar(): void {
-    if (!this.estados.length || !this.marcas.length || !this.colores.length) {
-      this.formError = 'No se cargaron los catálogos de estado/marca/color. Verifique ms-melamine (8086) y recargue.';
+    if (!this.marcas.length || !this.estados.length || !this.colores.length) {
+      this.formError = 'No se cargaron los catálogos. Verifique ms-melamine y recargue.';
       return;
+    }
+    if (this.form.get('cantidad')?.value === 0 || this.form.get('cantidad')?.value < 1) {
+      this.form.get('cantidad')?.setValue(1);
     }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -190,26 +186,28 @@ export class MelamineComponent implements OnInit {
       ancho: Number(v.ancho),
       largo: Number(v.largo),
       cantidad: Number(v.cantidad),
-      colorId: Number(v.colorId),
       marcaId: Number(v.marcaId),
       estadoId: Number(v.estadoId),
+      colorId: Number(v.colorId),
     };
-    const obs = this.isEditMode && this.itemId
-      ? this.svc.actualizar(this.itemId, payload, this.archivoSeleccionado)
+    
+    const obs = this.isEditMode && this.melamineId
+      ? this.svc.actualizar(this.melamineId, payload, this.archivoSeleccionado)
       : this.svc.crear(payload, this.archivoSeleccionado);
+      
     obs.subscribe({
       next: () => {
         this.cerrarModal();
         this.listar();
       },
       error: (err) => {
-        this.formError = httpErrorMessage(err, 'No se pudo guardar. Verifique ms-melamine (8086).');
+        this.formError = httpErrorMessage(err, 'No se pudo guardar. Verifique ms-melamine y que las dimensiones sean válidas.');
       },
     });
   }
 
   eliminar(id?: number): void {
-    if (!id || !confirm('¿Eliminar este melamine?')) return;
+    if (!id || !confirm('¿Eliminar esta melamina?')) return;
     this.svc.eliminar(id).subscribe({ next: () => this.listar() });
   }
 }
