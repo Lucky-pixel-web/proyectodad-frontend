@@ -83,6 +83,7 @@ export class ProveedorComponent implements OnInit {
     this.isEditMode = true;
     this.proveedorId = p.id ?? null;
     this.form.patchValue(p);
+    this.fotoFile = null;
     this.fotoPreview = p.foto || '';
     this.fotoNombre = p.foto ? 'Imagen actual' : '';
     this.showModal = true;
