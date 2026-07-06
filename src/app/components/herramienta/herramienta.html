@@ -13,6 +13,10 @@
       <span class="search-icon">🔍</span>
       <input type="text" placeholder="Buscar por nombre o marca..." [value]="busqueda" (input)="busqueda = $any($event.target).value" (keyup.enter)="filtrar()" />
     </div>
+    <select class="form-control-custom" style="max-width:200px" [value]="estadoFiltro" (change)="estadoFiltro = $any($event.target).value; filtrar()">
+      <option value="">Todos los estados</option>
+      <option *ngFor="let e of estados" [value]="e.nombre">{{ e.nombre }}</option>
+    </select>
     <button type="button" class="btn-search" (click)="filtrar()">Buscar</button>
   </div>
 
@@ -51,7 +55,8 @@
   <div class="empty-search animate-in" *ngIf="!buscando && sinResultadosBusqueda">
     <div class="empty-search-icon">🔍</div>
     <h3>No se encontraron resultados</h3>
-    <p>No hay herramientas que coincidan con «{{ busqueda }}»</p>
+    <p *ngIf="busqueda; else soloEstado">No hay herramientas que coincidan con «{{ busqueda }}»</p>
+    <ng-template #soloEstado><p>No hay herramientas con el estado seleccionado</p></ng-template>
   </div>
   <div class="empty-search animate-in" *ngIf="!buscando && !filtradas.length && !busquedaActiva">
     <div class="empty-search-icon">🔧</div>

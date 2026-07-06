@@ -26,6 +26,7 @@ export class HerramientaComponent implements OnInit {
   marcas: CatalogoItem[] = [];
   estados: CatalogoItem[] = [];
   busqueda = '';
+  estadoFiltro = '';
   busquedaActiva = false;
   form!: FormGroup;
   showModal = false;
@@ -54,6 +55,7 @@ export class HerramientaComponent implements OnInit {
       vidaUtil: [24, [Validators.required, Validators.min(1)]],
     });
     this.listar();
+    this.estadoSvc.listar().subscribe({ next: (estados) => (this.estados = estados) });
   }
 
   get sinResultadosBusqueda(): boolean {
@@ -94,11 +96,13 @@ export class HerramientaComponent implements OnInit {
   }
 
   filtrar(): void {
-    this.busquedaActiva = !!this.busqueda.trim();
+    this.busquedaActiva = !!this.busqueda.trim() || !!this.estadoFiltro;
     const q = this.busqueda.toLowerCase();
-    this.filtradas = this.herramientas.filter(
-      (h) => !q || h.nombre?.toLowerCase().includes(q) || h.marcaNombre?.toLowerCase().includes(q)
-    );
+    this.filtradas = this.herramientas.filter((h) => {
+      const matchTexto = !q || h.nombre?.toLowerCase().includes(q) || h.marcaNombre?.toLowerCase().includes(q);
+      const matchEstado = !this.estadoFiltro || h.estadoNombre === this.estadoFiltro;
+      return matchTexto && matchEstado;
+    });
   }
 
   getEstadoClass(estadoNombre?: string): string {
