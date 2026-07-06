@@ -1,13 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Header } from '../header/header'; // <-- Importación restaurada
+import { Header } from '../header/header';
 import { ProyectoService } from '../../services/proyecto';
 import { ClienteService } from '../../services/cliente';
 import { HerramientaService } from '../../services/herramienta';
 import { AccesorioService } from '../../services/accesorio';
-import { MelamineService } from '../../services/melamine'; // Asegúrate de importar MelamineService si es necesario
-import { CatalogoService, CatalogoItem } from '../../services/catalogo';
+import { MelamineService } from '../../services/melamine';
 import { Proyecto } from '../../models/proyecto';
 import { Cliente } from '../../models/cliente';
 import { Herramienta } from '../../models/herramienta';
@@ -19,12 +18,12 @@ import { formValidationMessage } from '../../utils/form-validation.util';
 @Component({
   selector: 'app-proyecto',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, Header], // <-- Header añadido aquí
+  imports: [CommonModule, ReactiveFormsModule, Header],
   templateUrl: './proyecto.html',
 })
 export class ProyectoComponent implements OnInit {
   proyectos: Proyecto[] = [];
-  filtrados: Proyecto[] = []; // Restaurado para el buscador
+  filtrados: Proyecto[] = [];
   clientes: Cliente[] = [];
   herramientas: Herramienta[] = [];
   accesorios: Accesorio[] = [];
@@ -40,12 +39,17 @@ export class ProyectoComponent implements OnInit {
   proyectoId: number | null = null;
   formError = '';
 
+  // --- Variables para el Modal Ticket (Ver más) ---
+  showTicketModal = false;
+  proyectoSeleccionado: any = null;
+  fechaActual: string = new Date().toLocaleDateString('es-PE'); // Formato local
+
   private fb = inject(FormBuilder);
   private proyectoSvc = inject(ProyectoService);
   private clienteSvc = inject(ClienteService);
   private herramientaSvc = inject(HerramientaService);
   private accesorioSvc = inject(AccesorioService);
-  private melamineSvc = inject(MelamineService); // Asegúrate de importar MelamineService si es necesario 
+  private melamineSvc = inject(MelamineService);
 
   ngOnInit(): void {
     this.initForm();
@@ -62,16 +66,21 @@ export class ProyectoComponent implements OnInit {
     });
   }
 
-  // --- Lógica del FormArray ---
   get detalles(): FormArray {
     return this.form.get('detalles') as FormArray;
   }
 
+  // --- Modificado para incluir las cantidades independientes ---
   agregarFila(data: any = null): void {
     this.detalles.push(this.fb.group({
-      herramientaId: [data?.herramientaId || null, Validators.required],
-      accesorioId: [data?.accesorioId || null, Validators.required],
-      melamineId: [data?.melamineId || null, Validators.required]
+      herramientaId: [data?.herramientaId || null],
+      cantidadHerramienta: [data?.cantidadHerramienta || 0, [Validators.min(0)]],
+      
+      accesorioId: [data?.accesorioId || null],
+      cantidadAccesorio: [data?.cantidadAccesorio || 0, [Validators.min(0)]],
+      
+      melamineId: [data?.melamineId || null],
+      cantidadMelamine: [data?.cantidadMelamine || 0, [Validators.min(0)]]
     }));
   }
 
@@ -79,14 +88,13 @@ export class ProyectoComponent implements OnInit {
     this.detalles.removeAt(index);
   }
 
-  // --- Lógica de visualización y filtrado ---
   get totalProyectos() { return this.proyectos.length; }
-  get perfectos() { return this.proyectos.length; } // Ajustar según tu lógica de estado
-  get conProblemas() { return 0; } // Ajustar según tu lógica de estado
+  get perfectos() { return this.proyectos.length; } 
+  get conProblemas() { return 0; } 
 
   getNombreCliente(id?: number): string {
     const c = this.clientes.find((x) => x.id === id);
-    return c ? `${c.nombre} ${c.apellido}` : '—';
+    return c ? `${c.nombre} ${c.apellido || ''}` : '—';
   }
 
   get sinResultadosBusqueda(): boolean {
@@ -103,7 +111,6 @@ export class ProyectoComponent implements OnInit {
 
   setFiltro(f: string): void { this.filtroEstado = f; this.filtrar(); }
 
-  // --- Gestión de Datos ---
   private cargarDatosMaestros(): void {
     this.clienteSvc.listar().subscribe(d => this.clientes = d);
     this.herramientaSvc.listar().subscribe(d => this.herramientas = d);
@@ -120,6 +127,28 @@ export class ProyectoComponent implements OnInit {
     });
   }
 
+  // --- Helpers para obtener nombres en el Ticket ---
+  getHerramientaNombre(id: any): string {
+    return this.herramientas.find(h => h.id == id)?.nombre || 'Herramienta no encontrada';
+  }
+  getAccesorioNombre(id: any): string {
+    return this.accesorios.find(a => a.id == id)?.nombre || 'Accesorio no encontrado';
+  }
+  getMelamineNombre(id: any): string {
+    return this.melamines.find(m => m.id == id)?.nombre || 'Melamine no encontrado';
+  }
+
+  // --- Lógica del Modal Ticket ---
+  abrirTicket(p: Proyecto): void {
+    this.proyectoSeleccionado = p;
+    this.showTicketModal = true;
+  }
+  cerrarTicket(): void {
+    this.showTicketModal = false;
+    this.proyectoSeleccionado = null;
+  }
+
+  // --- Lógica del Modal Formulario ---
   abrirModalCrear(): void {
     this.isEditMode = false;
     this.proyectoId = null;

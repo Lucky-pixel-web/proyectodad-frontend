@@ -1,8 +1,11 @@
-// proyecto.model.ts
 export interface DetalleProyecto {
-  herramientaId?: number;
-  accesorioId?: number;
-  melamineId?: number;
+  id?: number;
+  herramientaId?: number | null;
+  cantidadHerramienta?: number;
+  accesorioId?: number | null;
+  cantidadAccesorio?: number;
+  melamineId?: number | null;
+  cantidadMelamine?: number;
 }
 
 export interface Proyecto {

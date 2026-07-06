@@ -28,6 +28,7 @@
         <span>👤 <strong>Cliente:</strong> {{ getNombreCliente(p.clienteId) }}</span>
       </div>
       <div class="item-card-footer">
+        <button class="btn-outline" style="border-color: #6366f1; color: #818cf8;" (click)="abrirTicket(p)">🔍 Ver más</button>
         <button class="btn-outline" (click)="abrirModalEditar(p)">✏️ Editar</button>
         <button class="btn-danger-soft" (click)="eliminar(p.id)">🗑️ Eliminar</button>
       </div>
@@ -35,9 +36,59 @@
   </div>
 </div>
 
+<div class="modal-overlay" *ngIf="showTicketModal" (click)="cerrarTicket()" style="z-index: 1000;">
+  <div class="modal-panel" (click)="$event.stopPropagation()" style="background-color: #050505; color: #e5e5e5; font-family: 'Courier New', Courier, monospace; max-width: 600px; border: 1px solid #333; border-radius: 12px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div style="font-size: 1.2rem;"><strong>Orden N° 10{{ proyectoSeleccionado?.id || '0' }}</strong></div>
+      <button type="button" (click)="cerrarTicket()" style="background: none; border: 1px solid #555; border-radius: 4px; color: #fff; font-size: 16px; cursor: pointer; padding: 2px 8px;">✕</button>
+    </div>
+    
+    <div style="margin-bottom: 15px;">Fecha: {{ fechaActual }}</div>
+    
+    <div style="margin-top: 20px;">
+      <div style="text-transform: uppercase; font-size: 14px; letter-spacing: 1px; color: #9ca3af;">Cliente</div>
+      <div style="margin: 5px 0; color: #666;">------------------</div>
+      <div style="font-size: 18px;">{{ getNombreCliente(proyectoSeleccionado?.clienteId) }}</div>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <div style="text-transform: uppercase; font-size: 14px; letter-spacing: 1px; color: #9ca3af;">Proyecto</div>
+      <div style="margin: 5px 0; color: #666;">------------------</div>
+      <div style="font-size: 18px; color: #4ade80;">{{ proyectoSeleccionado?.nombre }}</div>
+    </div>
+
+    <div style="margin-top: 25px;">
+      <div style="text-transform: uppercase; font-size: 14px; letter-spacing: 1px; color: #9ca3af;">Productos Seleccionados</div>
+      <div style="margin: 5px 0 15px 0; color: #666;">------------------------------------------------------</div>
+      
+      <div *ngFor="let det of proyectoSeleccionado?.detalles">
+        
+        <div *ngIf="det.herramientaId && det.cantidadHerramienta > 0" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 15px;">
+          <div>{{ getHerramientaNombre(det.herramientaId) }}</div>
+          <div style="color: #9ca3af;">Herramienta</div>
+          <div style="text-align: right;">Cant. {{ det.cantidadHerramienta }}</div>
+        </div>
+
+        <div *ngIf="det.accesorioId && det.cantidadAccesorio > 0" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 15px;">
+          <div>{{ getAccesorioNombre(det.accesorioId) }}</div>
+          <div style="color: #9ca3af;">Accesorio</div>
+          <div style="text-align: right;">Cant. {{ det.cantidadAccesorio }}</div>
+        </div>
+
+        <div *ngIf="det.melamineId && det.cantidadMelamine > 0" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 15px;">
+          <div>{{ getMelamineNombre(det.melamineId) }}</div>
+          <div style="color: #9ca3af;">Melamina</div>
+          <div style="text-align: right;">Cant. {{ det.cantidadMelamine }}</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
-  <div class="modal-panel" (click)="$event.stopPropagation()">
-    <div class="modal-header">
+  <div class="modal-panel" (click)="$event.stopPropagation()" style="max-width: 800px;"> <div class="modal-header">
       <h3 class="modal-title">{{ isEditMode ? 'Editar Proyecto' : 'Agregar Proyecto' }}</h3>
       <button type="button" class="modal-close" (click)="cerrarModal()">✕</button>
     </div>
@@ -56,31 +107,40 @@
           </div>
         </div>
 
-        <div class="modal-form-section">
-          <label>Detalles del Proyecto (Herramienta, Accesorio, Melamine)</label>
+        <div class="modal-form-section" style="margin-top: 20px;">
+          <label style="font-weight: bold; margin-bottom: 10px; display: block;">Detalles del Proyecto (Fila Combinada)</label>
           <div formArrayName="detalles">
-            <div *ngFor="let det of detalles.controls; let i = index" [formGroupName]="i" style="display:flex; gap:10px; margin-bottom:10px;">
+            <div *ngFor="let det of detalles.controls; let i = index" [formGroupName]="i" 
+                 style="display:flex; flex-wrap: wrap; gap:15px; margin-bottom:15px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; align-items: center;">
               
-              <select class="form-control-custom" formControlName="herramientaId">
-                <option [ngValue]="null">-- Herramienta --</option>
-                <option *ngFor="let h of herramientas" [value]="h.id">{{ h.nombre }}</option>
-              </select>
+              <div style="display: flex; gap: 5px; flex: 1; min-width: 200px;">
+                <select class="form-control-custom" style="flex: 2;" formControlName="herramientaId">
+                  <option [ngValue]="null">-- Herramienta --</option>
+                  <option *ngFor="let h of herramientas" [value]="h.id">{{ h.nombre }}</option>
+                </select>
+                <input type="number" class="form-control-custom" style="width: 70px;" formControlName="cantidadHerramienta" placeholder="Cant" />
+              </div>
 
-              <select class="form-control-custom" formControlName="accesorioId">
-                <option [ngValue]="null">-- Accesorio --</option>
-                <option *ngFor="let a of accesorios" [value]="a.id">{{ a.nombre }}</option>
-              </select>
+              <div style="display: flex; gap: 5px; flex: 1; min-width: 200px;">
+                <select class="form-control-custom" style="flex: 2;" formControlName="accesorioId">
+                  <option [ngValue]="null">-- Accesorio --</option>
+                  <option *ngFor="let a of accesorios" [value]="a.id">{{ a.nombre }}</option>
+                </select>
+                <input type="number" class="form-control-custom" style="width: 70px;" formControlName="cantidadAccesorio" placeholder="Cant" />
+              </div>
 
-              <select class="form-control-custom" formControlName="melamineId">
-                <option [ngValue]="null">-- Melamine --</option>
-                <option *ngFor="let m of melamines" [value]="m.id">{{ m.nombre }}</option>
-              </select>
-
+              <div style="display: flex; gap: 5px; flex: 1; min-width: 200px;">
+                <select class="form-control-custom" style="flex: 2;" formControlName="melamineId">
+                  <option [ngValue]="null">-- Melamine --</option>
+                  <option *ngFor="let m of melamines" [value]="m.id">{{ m.nombre }}</option>
+                </select>
+                <input type="number" class="form-control-custom" style="width: 70px;" formControlName="cantidadMelamine" placeholder="Cant" />
+              </div>
               
               <button type="button" class="btn-danger-soft" (click)="eliminarFila(i)">X</button>
             </div>
           </div>
-          <button type="button" class="btn-outline" (click)="agregarFila()">+ Agregar Detalle</button>
+          <button type="button" class="btn-outline" (click)="agregarFila()" style="margin-top: 5px;">+ Agregar Detalle</button>
         </div>
       </div>
 
