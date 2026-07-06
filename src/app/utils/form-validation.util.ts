@@ -24,8 +24,10 @@ const FIELD_LABELS: Record<string, string> = {
   ubicacion: 'Ubicación',
   foto: 'Imagen',
   color: 'Color',
+  colorId: 'Color',
   ancho: 'Ancho',
   largo: 'Largo',
+  cantidad: 'Cantidad',
 };
 
 export function formValidationMessage(form: FormGroup): string {

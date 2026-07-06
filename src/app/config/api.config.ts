@@ -9,8 +9,4 @@ export const API = {
   proveedores: `${GATEWAY}/api/proveedores`,
   proyectos: `${GATEWAY}/api/proyectos`,
   auth: `${GATEWAY}/auth`,
-
-  // Sin ruta definida en el gateway todavía -> se llama directo al microservicio.
-  categorias: 'http://localhost:8082/api/categorias',
-  estado: 'http://localhost:8084/api/estado',
 } as const;

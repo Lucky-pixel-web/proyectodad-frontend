@@ -2,11 +2,11 @@ export interface Proveedor {
   id?: number;
   nombres?: string;
   apellidos?: string;
-  telefono?: number;
+  telefono?: string;
   categoriaId?: number;
   categoriaNombre?: string;
   direccion?: string;
   ubicacion?: string;
-  foto?: string;
   descripcion?: string;
+  foto?: string;
 }

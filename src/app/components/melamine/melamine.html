@@ -31,7 +31,7 @@
   <div class="cards-grid" *ngIf="!buscando && filtrados.length">
     <div class="item-card" *ngFor="let m of filtrados; let i = index" [style.animation-delay.ms]="i * 60">
       <div class="item-card-header">
-        <h3 class="item-card-title mb-0">{{ getDisplayName(m) }}</h3>
+        <h3 class="item-card-title mb-0">{{ m.nombre }}</h3>
         <span class="badge-status" [ngClass]="getEstadoClass(m.estadoNombre)">{{ m.estadoNombre || 'N/A' }}</span>
       </div>
       <div class="item-card-body">
@@ -40,8 +40,9 @@
           📐 {{ m.ancho }} x {{ m.largo }} mm ({{ (m.ancho! / 1000).toFixed(2) }}m x {{ (m.largo! / 1000).toFixed(2) }}m)
         </div>
         <div class="item-card-meta">
-          <span><strong>Color:</strong> <span class="badge-status info">{{ m.color }}</span></span>
-          <span><strong>Marca:</strong> {{ m.marca }}</span>
+          <span><strong>Color:</strong> <span class="badge-status info">{{ m.colorNombre }}</span></span>
+          <span><strong>Marca:</strong> {{ m.marcaNombre }}</span>
+          <span><strong>Cantidad:</strong> {{ m.cantidad }}</span>
         </div>
       </div>
       <div class="item-card-footer">
@@ -77,13 +78,24 @@
           <div class="form-group full"><label>Nombre <span class="req">*</span></label><input class="form-control-custom" formControlName="nombre" placeholder="Ej: Melamine Blanco" /></div>
           <div class="form-group"><label>Ancho (mm) <span class="req">*</span></label><input type="number" class="form-control-custom" formControlName="ancho" /></div>
           <div class="form-group"><label>Largo (mm) <span class="req">*</span></label><input type="number" class="form-control-custom" formControlName="largo" /></div>
-          <div class="form-group"><label>Color <span class="req">*</span></label><input class="form-control-custom" formControlName="color" /></div>
-          <div class="form-group"><label>Marca <span class="req">*</span></label><input class="form-control-custom" formControlName="marca" /></div>
+          <div class="form-group"><label>Cantidad <span class="req">*</span></label><input type="number" min="0" class="form-control-custom" formControlName="cantidad" /></div>
+          <div class="form-group"><label>Color <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="colorId" *ngIf="colores.length">
+              <option *ngFor="let c of colores" [ngValue]="c.id">{{ c.nombre }}</option>
+            </select>
+            <p class="form-hint warn" *ngIf="!colores.length">No se cargaron colores. Verifique ms-melamine (8086) y recargue.</p>
+          </div>
+          <div class="form-group"><label>Marca <span class="req">*</span></label>
+            <select class="form-control-custom" formControlName="marcaId" *ngIf="marcas.length">
+              <option *ngFor="let ma of marcas" [ngValue]="ma.id">{{ ma.nombre }}</option>
+            </select>
+            <p class="form-hint warn" *ngIf="!marcas.length">No se cargaron marcas. Verifique ms-melamine (8086) y recargue.</p>
+          </div>
           <div class="form-group"><label>Estado <span class="req">*</span></label>
             <select class="form-control-custom" formControlName="estadoId" *ngIf="estados.length">
               <option *ngFor="let e of estados" [ngValue]="e.id">{{ e.nombre }}</option>
             </select>
-            <p class="form-hint warn" *ngIf="!estados.length">No se cargaron estados. Verifique ms-estado (8084) y recargue.</p>
+            <p class="form-hint warn" *ngIf="!estados.length">No se cargaron estados. Verifique ms-melamine (8086) y recargue.</p>
           </div>
           <div class="form-group full">
             <label>Imagen (opcional)</label>

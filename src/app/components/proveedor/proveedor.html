@@ -69,12 +69,12 @@
         <div class="form-grid">
           <div class="form-group"><label>Nombres <span class="req">*</span></label><input class="form-control-custom" formControlName="nombres" /></div>
           <div class="form-group"><label>Apellidos <span class="req">*</span></label><input class="form-control-custom" formControlName="apellidos" /></div>
-          <div class="form-group"><label>Teléfono <span class="req">*</span></label><input type="number" class="form-control-custom" formControlName="telefono" /></div>
+          <div class="form-group"><label>Teléfono <span class="req">*</span></label><input type="text" maxlength="9" placeholder="987654321" class="form-control-custom" formControlName="telefono" /></div>
           <div class="form-group"><label>Categoría que Vende <span class="req">*</span></label>
             <select class="form-control-custom" formControlName="categoriaId" *ngIf="categorias.length">
               <option *ngFor="let c of categorias" [ngValue]="c.id">{{ c.nombre }}</option>
             </select>
-            <p class="form-hint warn" *ngIf="!categorias.length">No se cargaron categorías. Verifique ms-categorias (8082) y recargue.</p>
+            <p class="form-hint warn" *ngIf="!categorias.length">No se cargaron categorías. Verifique ms-proveedores (8092) y recargue.</p>
           </div>
           <div class="form-group full"><label>Dirección <span class="req">*</span></label><input class="form-control-custom" formControlName="direccion" placeholder="Ej: Av. Industrial 123, Lima" /></div>
           <div class="form-group full">
@@ -83,7 +83,7 @@
             <app-maps-planet [query]="mapsQuery" label="Ver ubicación en tiempo real" />
           </div>
           <div class="form-group full">
-            <label>Imagen <span class="req">*</span></label>
+            <label>Imagen (opcional)</label>
             <div class="file-upload-row">
               <label class="btn-file">📁 Subir archivo<input type="file" accept="image/*" hidden (change)="onFotoSelected($event)" /></label>
               <span class="file-name" *ngIf="fotoNombre">{{ fotoNombre }}</span>

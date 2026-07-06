@@ -4,9 +4,9 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Header } from '../header/header';
 import { MapsPlanet } from '../maps-planet/maps-planet';
 import { ProveedorService } from '../../services/proveedor';
-import { CatalogoService, CatalogoItem } from '../../services/catalogo';
+import { CategoriaProveedorService } from '../../services/categoria-proveedor';
+import { CatalogoItem } from '../../services/catalogo';
 import { Proveedor } from '../../models/proveedor';
-import { cacheEntityImage, mergeEntityImages } from '../../utils/image-cache.util';
 import { httpErrorMessage } from '../../utils/http-error.util';
 import { formValidationMessage } from '../../utils/form-validation.util';
 
@@ -31,20 +31,20 @@ export class ProveedorComponent implements OnInit {
   busquedaActiva = false;
   fotoNombre = '';
   fotoPreview = '';
+  private archivoSeleccionado?: File;
 
   private fb = inject(FormBuilder);
   private svc = inject(ProveedorService);
-  private catSvc = inject(CatalogoService);
+  private catSvc = inject(CategoriaProveedorService);
 
   ngOnInit(): void {
     this.form = this.fb.group({
       nombres: ['', Validators.required],
       apellidos: ['', Validators.required],
-      telefono: [987654321, Validators.required],
+      telefono: ['987654321', [Validators.required, Validators.pattern(/^[0-9]{9}$/)]],
       categoriaId: [null as number | null, Validators.required],
       direccion: ['', Validators.required],
       ubicacion: ['', Validators.required],
-      foto: ['', Validators.required],
       descripcion: ['Proveedor registrado desde el sistema', Validators.required],
     });
     this.cargarCategorias();
@@ -52,17 +52,15 @@ export class ProveedorComponent implements OnInit {
   }
 
   private cargarCategorias(onLoaded?: () => void): void {
-    this.catSvc.listarCategorias().subscribe({
+    this.catSvc.listar().subscribe({
       next: (c) => {
         this.categorias = c;
-        if (c.length) {
-          const current = this.form.get('categoriaId')?.value;
-          const exists = c.some((x) => x.id === current);
-          if (!exists) this.form.patchValue({ categoriaId: c[0].id });
-        }
         onLoaded?.();
       },
-      error: () => { this.categorias = []; },
+      error: () => {
+        this.categorias = [];
+        onLoaded?.();
+      },
     });
   }
 
@@ -85,7 +83,7 @@ export class ProveedorComponent implements OnInit {
     this.buscando = true;
     this.svc.listar().subscribe({
       next: (data) => {
-        this.proveedores = mergeEntityImages('proveedor', data);
+        this.proveedores = data;
         this.filtrar();
         this.buscando = false;
       },
@@ -105,17 +103,28 @@ export class ProveedorComponent implements OnInit {
 
   setFiltro(f: string): void { this.filtroCat = f; this.filtrar(); }
 
+  async onFotoSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const { readImageAsDataUrl } = await import('../../utils/file-maps.util');
+    this.archivoSeleccionado = file;
+    this.fotoNombre = file.name;
+    this.fotoPreview = await readImageAsDataUrl(file);
+    input.value = '';
+  }
+
   abrirModalCrear(): void {
     this.isEditMode = false;
     this.proveedorId = null;
     this.formError = '';
     this.fotoNombre = '';
     this.fotoPreview = '';
+    this.archivoSeleccionado = undefined;
     this.cargarCategorias(() => {
       this.form.reset({
-        telefono: 987654321,
+        telefono: '987654321',
         categoriaId: this.categorias[0]?.id ?? null,
-        foto: '',
         descripcion: 'Proveedor registrado desde el sistema',
       });
       this.showModal = true;
@@ -128,11 +137,16 @@ export class ProveedorComponent implements OnInit {
     this.formError = '';
     this.fotoNombre = p.foto ? 'imagen-cargada' : '';
     this.fotoPreview = p.foto || '';
+    this.archivoSeleccionado = undefined;
     this.cargarCategorias(() => {
       this.form.patchValue({
-        ...p,
+        nombres: p.nombres,
+        apellidos: p.apellidos,
+        telefono: p.telefono,
         categoriaId: p.categoriaId ?? this.categorias[0]?.id ?? null,
-        foto: p.foto ? 'imagen-cargada.png' : '',
+        direccion: p.direccion,
+        ubicacion: p.ubicacion,
+        descripcion: p.descripcion,
       });
       this.showModal = true;
     });
@@ -142,7 +156,7 @@ export class ProveedorComponent implements OnInit {
 
   guardar(): void {
     if (!this.categorias.length) {
-      this.formError = 'No hay categorías disponibles. Reinicie ms-categorias (8082) y recargue la página.';
+      this.formError = 'No se cargaron las categorías. Verifique ms-proveedores (8092) y recargue.';
       return;
     }
     if (this.form.invalid) {
@@ -152,24 +166,25 @@ export class ProveedorComponent implements OnInit {
     }
     this.formError = '';
     const v = this.form.value;
-    const fotoRef = this.fotoNombre || 'sin-imagen.png';
     const payload: Proveedor = {
-      ...v,
+      nombres: v.nombres,
+      apellidos: v.apellidos,
+      telefono: v.telefono,
       categoriaId: Number(v.categoriaId),
-      foto: fotoRef,
+      direccion: v.direccion,
+      ubicacion: v.ubicacion,
+      descripcion: v.descripcion,
     };
     const obs = this.isEditMode && this.proveedorId
-      ? this.svc.actualizar(this.proveedorId, payload)
-      : this.svc.crear(payload);
+      ? this.svc.actualizar(this.proveedorId, payload, this.archivoSeleccionado)
+      : this.svc.crear(payload, this.archivoSeleccionado);
     obs.subscribe({
-      next: (res) => {
-        const id = res.id ?? this.proveedorId;
-        if (id && this.fotoPreview) cacheEntityImage('proveedor', id, this.fotoPreview);
+      next: () => {
         this.cerrarModal();
         this.listar();
       },
       error: (err) => {
-        this.formError = httpErrorMessage(err, 'No se pudo guardar. Verifique ms-proveedores (8092) y ms-categorias (8082). Si config-server usa 8088, proveedores no puede usar ese puerto.');
+        this.formError = httpErrorMessage(err, 'No se pudo guardar. Verifique ms-proveedores (8092).');
       },
     });
   }
@@ -177,15 +192,6 @@ export class ProveedorComponent implements OnInit {
   eliminar(id?: number): void {
     if (!id || !confirm('¿Eliminar este proveedor?')) return;
     this.svc.eliminar(id).subscribe({ next: () => this.listar() });
-  }
-
-  async onFotoSelected(event: Event): Promise<void> {
-    const { pickImageFromInput } = await import('../../utils/file-maps.util');
-    const picked = await pickImageFromInput(event);
-    if (!picked) return;
-    this.fotoNombre = picked.name;
-    this.fotoPreview = picked.dataUrl;
-    this.form.patchValue({ foto: picked.dataUrl });
   }
 
   get mapsQuery(): string {

@@ -1,12 +1,15 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { Header } from '../header/header';
 import { MelamineService } from '../../services/melamine';
-import { CatalogoService, CatalogoItem } from '../../services/catalogo';
+import { EstadoMelamineService } from '../../services/estado-melamine';
+import { MarcaMelamineService } from '../../services/marca-melamine';
+import { ColorMelamineService } from '../../services/color-melamine';
+import { CatalogoItem } from '../../services/catalogo';
 import { Melamine } from '../../models/melamine';
 
-import { cacheEntityImage, mergeEntityImages } from '../../utils/image-cache.util';
 import { httpErrorMessage } from '../../utils/http-error.util';
 import { formValidationMessage } from '../../utils/form-validation.util';
 
@@ -20,6 +23,8 @@ export class MelamineComponent implements OnInit {
   items: Melamine[] = [];
   filtrados: Melamine[] = [];
   estados: CatalogoItem[] = [];
+  marcas: CatalogoItem[] = [];
+  colores: CatalogoItem[] = [];
   busqueda = '';
   filtroEstado = 'Todos';
   form!: FormGroup;
@@ -29,45 +34,49 @@ export class MelamineComponent implements OnInit {
   buscando = false;
   formError = '';
   busquedaActiva = false;
+  fotoNombre = '';
+  fotoPreview = '';
+  private archivoSeleccionado?: File;
 
   private fb = inject(FormBuilder);
   private svc = inject(MelamineService);
-  private catSvc = inject(CatalogoService);
-
-  fotoNombre = '';
-  fotoPreview = '';
+  private estadoSvc = inject(EstadoMelamineService);
+  private marcaSvc = inject(MarcaMelamineService);
+  private colorSvc = inject(ColorMelamineService);
 
   ngOnInit(): void {
     this.form = this.fb.group({
       nombre: ['', Validators.required],
       ancho: [1220, Validators.required],
       largo: [2440, Validators.required],
-      color: ['', Validators.required],
-      marca: ['', Validators.required],
+      cantidad: [1, [Validators.required, Validators.min(0)]],
+      colorId: [null as number | null, Validators.required],
+      marcaId: [null as number | null, Validators.required],
       estadoId: [null as number | null, Validators.required],
-      foto: [''],
     });
-    this.cargarEstados();
     this.listar();
+    this.estadoSvc.listar().subscribe({ next: (estados) => (this.estados = estados) });
   }
 
-  private cargarEstados(onLoaded?: () => void): void {
-    this.catSvc.listarEstados().subscribe({
-      next: (e) => {
-        this.estados = e;
-        if (e.length) {
-          const current = this.form.get('estadoId')?.value;
-          const exists = e.some((x) => x.id === current);
-          if (!exists) this.form.patchValue({ estadoId: e[0].id });
-        }
+  private cargarCatalogos(onLoaded?: () => void): void {
+    forkJoin({
+      estados: this.estadoSvc.listar(),
+      marcas: this.marcaSvc.listar(),
+      colores: this.colorSvc.listar(),
+    }).subscribe({
+      next: ({ estados, marcas, colores }) => {
+        this.estados = estados;
+        this.marcas = marcas;
+        this.colores = colores;
         onLoaded?.();
       },
-      error: () => { this.estados = []; },
+      error: () => {
+        this.estados = [];
+        this.marcas = [];
+        this.colores = [];
+        onLoaded?.();
+      },
     });
-  }
-
-  getDisplayName(m: Melamine): string {
-    return m.color ? `Melamine ${m.color}` : 'Melamine';
   }
 
   get countBueno() { return this.items.filter((m) => (m.estadoNombre || '').toLowerCase().includes('bueno')).length; }
@@ -82,7 +91,7 @@ export class MelamineComponent implements OnInit {
     this.buscando = true;
     this.svc.listar().subscribe({
       next: (data) => {
-        this.items = mergeEntityImages('melamine', data);
+        this.items = data;
         this.filtrar();
         this.buscando = false;
       },
@@ -94,7 +103,7 @@ export class MelamineComponent implements OnInit {
     this.busquedaActiva = !!this.busqueda.trim();
     const q = this.busqueda.toLowerCase();
     this.filtrados = this.items.filter((m) => {
-      const matchQ = !q || this.getDisplayName(m).toLowerCase().includes(q) || m.color?.toLowerCase().includes(q) || m.marca?.toLowerCase().includes(q);
+      const matchQ = !q || m.nombre?.toLowerCase().includes(q) || m.colorNombre?.toLowerCase().includes(q) || m.marcaNombre?.toLowerCase().includes(q);
       const matchE = this.filtroEstado === 'Todos' || (m.estadoNombre || '').toLowerCase().includes(this.filtroEstado.toLowerCase());
       return matchQ && matchE;
     });
@@ -110,14 +119,33 @@ export class MelamineComponent implements OnInit {
     return 'info';
   }
 
+  async onFotoSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const { readImageAsDataUrl } = await import('../../utils/file-maps.util');
+    this.archivoSeleccionado = file;
+    this.fotoNombre = file.name;
+    this.fotoPreview = await readImageAsDataUrl(file);
+    input.value = '';
+  }
+
   abrirModalCrear(): void {
     this.isEditMode = false;
     this.itemId = null;
     this.formError = '';
     this.fotoNombre = '';
     this.fotoPreview = '';
-    this.cargarEstados(() => {
-      this.form.reset({ ancho: 1220, largo: 2440, estadoId: this.estados[0]?.id ?? null, foto: '' });
+    this.archivoSeleccionado = undefined;
+    this.cargarCatalogos(() => {
+      this.form.reset({
+        ancho: 1220,
+        largo: 2440,
+        cantidad: 1,
+        colorId: this.colores[0]?.id ?? null,
+        marcaId: this.marcas[0]?.id ?? null,
+        estadoId: this.estados[0]?.id ?? null,
+      });
       this.showModal = true;
     });
   }
@@ -128,10 +156,15 @@ export class MelamineComponent implements OnInit {
     this.formError = '';
     this.fotoNombre = m.foto ? 'imagen-cargada' : '';
     this.fotoPreview = m.foto || '';
-    this.cargarEstados(() => {
+    this.archivoSeleccionado = undefined;
+    this.cargarCatalogos(() => {
       this.form.patchValue({
-        ...m,
-        nombre: this.getDisplayName(m),
+        nombre: m.nombre,
+        ancho: m.ancho,
+        largo: m.largo,
+        cantidad: m.cantidad,
+        colorId: m.colorId ?? this.colores[0]?.id ?? null,
+        marcaId: m.marcaId ?? this.marcas[0]?.id ?? null,
         estadoId: m.estadoId ?? this.estados[0]?.id ?? null,
       });
       this.showModal = true;
@@ -141,8 +174,8 @@ export class MelamineComponent implements OnInit {
   cerrarModal(): void { this.showModal = false; this.formError = ''; }
 
   guardar(): void {
-    if (!this.estados.length) {
-      this.formError = 'No hay estados disponibles. Reinicie ms-estado (8084) y recargue la página.';
+    if (!this.estados.length || !this.marcas.length || !this.colores.length) {
+      this.formError = 'No se cargaron los catálogos de estado/marca/color. Verifique ms-melamine (8086) y recargue.';
       return;
     }
     if (this.form.invalid) {
@@ -151,28 +184,26 @@ export class MelamineComponent implements OnInit {
       return;
     }
     this.formError = '';
-    const { nombre, ...rest } = this.form.value;
+    const v = this.form.value;
     const payload: Melamine = {
-      ancho: Number(rest.ancho),
-      largo: Number(rest.largo),
-      color: rest.color,
-      marca: rest.marca,
-      estadoId: Number(rest.estadoId),
-      foto: rest.foto || this.fotoPreview || '',
+      nombre: v.nombre,
+      ancho: Number(v.ancho),
+      largo: Number(v.largo),
+      cantidad: Number(v.cantidad),
+      colorId: Number(v.colorId),
+      marcaId: Number(v.marcaId),
+      estadoId: Number(v.estadoId),
     };
-    if (!payload.color && nombre) payload.color = String(nombre).replace(/^Melamine\s/i, '');
     const obs = this.isEditMode && this.itemId
-      ? this.svc.actualizar(this.itemId, payload)
-      : this.svc.crear(payload);
+      ? this.svc.actualizar(this.itemId, payload, this.archivoSeleccionado)
+      : this.svc.crear(payload, this.archivoSeleccionado);
     obs.subscribe({
-      next: (res) => {
-        const id = res.id ?? this.itemId;
-        if (id && payload.foto) cacheEntityImage('melamine', id, payload.foto);
+      next: () => {
         this.cerrarModal();
         this.listar();
       },
       error: (err) => {
-        this.formError = httpErrorMessage(err, 'No se pudo guardar. Verifique ms-melamine (8086) y ms-estado (8084). Debe existir al menos un estado (Bueno/Regular/Malo) en la base de datos.');
+        this.formError = httpErrorMessage(err, 'No se pudo guardar. Verifique ms-melamine (8086).');
       },
     });
   }
@@ -180,14 +211,5 @@ export class MelamineComponent implements OnInit {
   eliminar(id?: number): void {
     if (!id || !confirm('¿Eliminar este melamine?')) return;
     this.svc.eliminar(id).subscribe({ next: () => this.listar() });
-  }
-
-  async onFotoSelected(event: Event): Promise<void> {
-    const { pickImageFromInput } = await import('../../utils/file-maps.util');
-    const picked = await pickImageFromInput(event);
-    if (!picked) return;
-    this.fotoNombre = picked.name;
-    this.fotoPreview = picked.dataUrl;
-    this.form.patchValue({ foto: picked.dataUrl });
   }
 }
